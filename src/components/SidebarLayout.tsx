@@ -7,14 +7,15 @@ import { Users, BookOpen, Code, User, LayoutDashboard, Menu, X, Shield, Sparkles
 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const inter = 'font-inter';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/assistant', label: 'Assistant', icon: Sparkles },
   { href: '/dashboard/my-group', label: 'My Group', icon: Users },
   { href: '/dashboard/sessions', label: 'Sessions', icon: BookOpen },
-  { href: '/dashboard/assistant', label: 'Assistant', icon: Sparkles },
   { href: '/profile', label: 'My Profile', icon: User },
 ];
 
@@ -52,7 +53,16 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
           {navLinks.map(link => (
             <Link key={link.href} href={link.href} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#003366] transition font-medium">
               <link.icon className="w-5 h-5" />
-              <span className={inter}>{link.label}</span>
+              <span className={inter + ' flex items-center'}>{link.label}
+                {link.label === 'Assistant' && (
+                  <Badge
+                    className="ml-2 px-1 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 rounded"
+                    style={{ borderRadius: '4px', minWidth: '18px', boxShadow: 'none' }}
+                  >
+                    New
+                  </Badge>
+                )}
+              </span>
             </Link>
           ))}
           {isMentor && (

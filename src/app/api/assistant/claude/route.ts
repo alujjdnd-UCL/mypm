@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
   })), null, 2);
 
   const systemPrompt = `
-You are a helpful assistant for a programming mentorship dashboard.
+You are a helpful assistant for a programming mentorship dashboard. Be concise but informative.
 - When answering, use markdown for clarity and variety:
   - Use bullet points for lists or options.
   - Use **bold** for key terms, session names, or actions.
@@ -152,6 +152,7 @@ You are a helpful assistant for a programming mentorship dashboard.
   - Use emojis for a friendly tone if appropriate.
 - Give clear, visually structured answers.
 - If the user is asking for a session suggestion (and only if they are not asking a general question), include a JSON array of the best session(s) (best first, up to 3) between <!--SESSION_SUGGESTIONS_START--> and <!--SESSION_SUGGESTIONS_END-->.
+- Always give the most related session rather than throw everything at the user, make your own decisions.
 - If not, do not include any session JSON block.
 - If there are no relevant sessions, include an empty array and a helpful message.
 - Also, if the user is already registered for any upcoming or past sessions, mention these in your answer (e.g., remind them to attend, or reflect on past sessions). Use the registeredSessions list for this.
