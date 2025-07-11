@@ -10,12 +10,15 @@ import SidebarLayout from '@/components/SidebarLayout';
 import { PageHeader } from '@/components/PageHeader';
 import { Calendar, Clock, MapPin, Users, UserCheck, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, parseISO } from 'date-fns';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface MentoringSession {
     id: string;
     title: string;
     description: string;
     date: string;
+    startTime?: string | null;
+    endTime?: string | null;
     location: string;
     isPublic: boolean;
     category: string;
@@ -70,6 +73,27 @@ const getCategoryColor = (category: string) => {
     }
 };
 
+// Helper to format session time range
+function formatSessionTime(session: MentoringSession) {
+    if (session.startTime && session.endTime) {
+        const start = new Date(session.startTime);
+        const end = new Date(session.endTime);
+        // If same day, show as 'HH:mm - HH:mm, ddd, MMM d'
+        if (start.toDateString() === end.toDateString()) {
+            return `${format(start, 'HH:mm')} - ${format(end, 'HH:mm')}, ${format(start, 'EEE, MMM d')}`;
+        } else {
+            // If different days, show full range
+            return `${format(start, 'PPP p')} - ${format(end, 'PPP p')}`;
+        }
+    } else if (session.startTime) {
+        const start = new Date(session.startTime);
+        return `${format(start, 'PPP p')}`;
+    } else {
+        // Fallback to date
+        return format(new Date(session.date), 'PPP p');
+    }
+}
+
 export default function SessionsPage() {
     const { user, loading: userLoading } = useAuth();
     const [sessions, setSessions] = useState<MentoringSession[]>([]);
@@ -78,6 +102,7 @@ export default function SessionsPage() {
     const [joiningSession, setJoiningSession] = useState<string | null>(null);
     const [currentWeek, setCurrentWeek] = useState(new Date());
     const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+    const [selectedSession, setSelectedSession] = useState<MentoringSession | null>(null);
 
     useRequireAuth({ requiredPermission: PERMISSIONS.USER_READ });
 
@@ -195,6 +220,10 @@ export default function SessionsPage() {
         });
     };
 
+    const handleSessionClick = (session: MentoringSession) => {
+        setSelectedSession(session);
+    };
+
     const renderCalendar = () => {
         const start = startOfWeek(currentWeek);
         const end = endOfWeek(currentWeek);
@@ -229,7 +258,7 @@ export default function SessionsPage() {
                                             </h3>
 
                                             <div className="text-sm text-gray-600 mb-2">
-                                                {format(new Date(session.date), 'PPP p')}
+                                                {formatSessionTime(session)}
                                             </div>
 
                                             <div className="flex items-center justify-between">
@@ -263,6 +292,11 @@ export default function SessionsPage() {
             </div>
         );
     };
+
+    // Helper to get mentor name
+    const getMentorName = (session: MentoringSession) => `${session.mentor.firstName} ${session.mentor.lastName}`;
+    // Helper to get group label
+    const getGroupLabel = (session: MentoringSession) => session.group ? `Group ${session.group.groupNumber}` : '';
 
     if (userLoading || loading) {
         return (
@@ -359,18 +393,15 @@ export default function SessionsPage() {
                                         {sessions.map(session => (
                                             <div
                                                 key={session.id}
-                                                className="p-2 bg-blue-50 rounded-lg text-xs border-l-4 border-blue-500 hover:bg-blue-100 cursor-pointer transition-colors"
-                                                onClick={() => {
-                                                    // Could open session details modal here
-                                                }}
+                                                className="p-2 bg-blue-50 rounded-lg text-xs border-l-4 border-blue-500 hover:bg-blue-100 cursor-pointer transition-colors shadow-sm hover:shadow-md"
+                                                onClick={() => handleSessionClick(session)}
+                                                tabIndex={0}
+                                                role="button"
+                                                aria-label={`View details for ${session.title}`}
                                             >
                                                 <div className="font-semibold text-gray-900 truncate mb-1">{session.title}</div>
-                                                <div className="text-gray-600 truncate">
-                                                    {format(parseISO(session.date), 'HH:mm')}
-                                                </div>
-                                                <div className="text-gray-500 truncate">
-                                                    {session.location}
-                                                </div>
+                                                <div className="text-gray-600 truncate">{formatSessionTime(session)}</div>
+                                                <div className="text-gray-500 truncate">{session.location}</div>
                                                 <div className="flex items-center gap-1 mt-1 flex-wrap">
                                                     <Badge className={`${getCategoryColor(session.category)} text-xs px-1 py-0`}>
                                                         {session.category === 'CS_BSC_MENG' ? 'CS' :
@@ -418,7 +449,7 @@ export default function SessionsPage() {
                         ) : (
                             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                                 {sessions.filter(s => getSessionStatus(s) === 'upcoming').map((session) => (
-                                    <Card key={session.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                                    <Card key={session.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleSessionClick(session)}>
                                         <CardContent className="p-6">
                                             <div className="flex items-start justify-between mb-4">
                                                 <Badge className={getCategoryColor(session.category)}>
@@ -444,7 +475,7 @@ export default function SessionsPage() {
                                             <div className="space-y-2 mb-4">
                                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                                     <Clock className="w-4 h-4" />
-                                                    <span>{format(parseISO(session.date), 'PPP p')}</span>
+                                                    <span>{formatSessionTime(session)}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                                     <MapPin className="w-4 h-4" />
@@ -489,6 +520,43 @@ export default function SessionsPage() {
                     </div>
                 )}
             </div>
+
+            {/* Session Details Modal */}
+            {selectedSession && (
+                <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
+                    <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>{selectedSession.title}</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-2">
+                            <div className="text-sm text-gray-600">{formatSessionTime(selectedSession)}</div>
+                            <div className="text-sm text-gray-600 flex items-center gap-2"><MapPin className="w-4 h-4" />{selectedSession.location}</div>
+                            <div className="text-sm text-gray-600 flex items-center gap-2"><Users className="w-4 h-4" />{getMentorName(selectedSession)} (Mentor)</div>
+                            {selectedSession.group && (
+                                <div className="text-sm text-gray-600 flex items-center gap-2"><Users className="w-4 h-4" />{getGroupLabel(selectedSession)}</div>
+                            )}
+                            <div className="flex gap-2 flex-wrap">
+                                <Badge className={getCategoryColor(selectedSession.category)}>{getCategoryLabel(selectedSession.category)}</Badge>
+                                {selectedSession.isPublic && <Badge variant="outline" className="text-green-600 border-green-300">Public</Badge>}
+                                {isUserRegistered(selectedSession) && <Badge variant="outline" className="text-blue-600 border-blue-300">Registered</Badge>}
+                            </div>
+                            {selectedSession.description && <div className="text-gray-700 text-sm mt-2 whitespace-pre-line">{selectedSession.description}</div>}
+                            <div className="text-xs text-gray-500 mt-2">Capacity: {selectedSession.maxCapacity ? `${selectedSession._count.attendances} / ${selectedSession.maxCapacity}` : `${selectedSession._count.attendances} registered`}</div>
+                            <div className="flex gap-2 mt-4">
+                                {isUserRegistered(selectedSession) ? (
+                                    <Button variant="outline" size="sm" disabled>Registered</Button>
+                                ) : (
+                                    <Button size="sm" className="bg-[#002248] hover:bg-[#003366]" onClick={() => joinSession(selectedSession.id)} disabled={joiningSession === selectedSession.id}>
+                                        <UserPlus className="w-4 h-4 mr-1" />
+                                        {joiningSession === selectedSession.id ? 'Joining...' : 'Join'}
+                                    </Button>
+                                )}
+                                <Button variant="outline" size="sm" onClick={() => setSelectedSession(null)}>Close</Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            )}
         </SidebarLayout>
     );
 }

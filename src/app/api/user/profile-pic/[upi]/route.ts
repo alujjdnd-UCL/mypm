@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { createCanvas } from 'canvas';
 import crypto from 'crypto';
+import { getProfilePic, uploadProfilePic } from '@/lib/r2';
 
 export async function GET(
     request: NextRequest, 
@@ -29,52 +30,33 @@ export async function GET(
             return new NextResponse('UPI is required', { status: 400 });
         }
 
-        // Check for existing files with different extensions
-        const extensions = ['webp', 'png', 'jpg', 'jpeg'];
-        let existingFile: { path: string; stats: { mtime: Date; size: number }; contentType: string } | null = null;
-
-        for (const ext of extensions) {
-            const filePath = path.resolve(process.cwd(), 'public', 'profile-pics', `${upi}.${ext}`);
-            try {
-                const stats = await fs.stat(filePath);
-                const contentType = ext === 'webp' ? 'image/webp' : 
-                                  ext === 'png' ? 'image/png' : 'image/jpeg';
-                existingFile = { path: filePath, stats, contentType };
-                break;
-            } catch {
-                // File doesn't exist, continue to next extension
-                continue;
-            }
-        }
-
-        if (existingFile) {
-            // Generate ETag based on file modification time and size
-            const etag = `"${existingFile.stats.mtime.getTime()}-${existingFile.stats.size}"`;
-            const lastModified = existingFile.stats.mtime.toUTCString();
-            
+        // Try to fetch from R2
+        const r2Pic = await getProfilePic(upi);
+        if (r2Pic) {
+            console.log('Serving profile pic from R2:', upi);
+            // Generate ETag and Last-Modified from R2 metadata
+            const etag = r2Pic.ContentLength ? `"r2-${upi}-${r2Pic.ContentLength}"` : undefined;
+            const lastModified = r2Pic.LastModified ? r2Pic.LastModified.toUTCString() : undefined;
             // Check if client has cached version
             const clientEtag = request.headers.get('if-none-match');
             const clientLastModified = request.headers.get('if-modified-since');
-            
-            if (clientEtag === etag || clientLastModified === lastModified) {
+            if ((etag && clientEtag === etag) || (lastModified && clientLastModified === lastModified)) {
                 return new NextResponse(null, {
                     status: 304,
                     headers: {
-                        'ETag': etag,
-                        'Last-Modified': lastModified,
-                        'Cache-Control': 'private, max-age=3600, must-revalidate', // 1 hour with validation
+                        ...(etag ? { 'ETag': etag } : {}),
+                        ...(lastModified ? { 'Last-Modified': lastModified } : {}),
+                        'Cache-Control': 'public, max-age=86400, immutable', // 1 day, immutable
                     },
                 });
             }
-
-            const imageBuffer = await fs.readFile(existingFile.path);
-            return new NextResponse(imageBuffer, {
+            return new NextResponse(r2Pic.Body, {
                 status: 200,
                 headers: {
-                    'Content-Type': existingFile.contentType,
-                    'ETag': etag,
-                    'Last-Modified': lastModified,
-                    'Cache-Control': 'private, max-age=3600, must-revalidate', // 1 hour with validation
+                    'Content-Type': 'image/png',
+                    ...(etag ? { 'ETag': etag } : {}),
+                    ...(lastModified ? { 'Last-Modified': lastModified } : {}),
+                    'Cache-Control': 'public, max-age=86400, immutable', // 1 day, immutable
                 },
             });
         }
@@ -131,16 +113,13 @@ export async function GET(
             throw new Error('Generated buffer is empty');
         }
 
-        // Save as PNG
-        const filePath = path.resolve(process.cwd(), 'public', 'profile-pics', `${upi}.png`);
-        
-        // Ensure directory exists
-        const dir = path.dirname(filePath);
-        await fs.mkdir(dir, { recursive: true });
-        
-        console.log('Saving image to:', filePath);
-        await fs.writeFile(filePath, buffer);
-        console.log('Image saved successfully');
+        // Save as PNG to R2 as a cache
+        try {
+            await uploadProfilePic(upi, buffer, 'image/png');
+            console.log('Initials avatar cached to R2');
+        } catch (err) {
+            console.error('Failed to cache initials avatar to R2:', err);
+        }
 
         // Generate ETag for generated image
         const contentHash = crypto.createHash('md5').update(buffer).digest('hex');

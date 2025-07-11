@@ -68,6 +68,25 @@ export function UserProfile() {
         });
     };
 
+    const handleResetAvatar = async () => {
+        setUploading(true);
+        setError(null);
+        try {
+            const res = await fetch('/api/user', { method: 'DELETE' });
+            const data = await res.json();
+            if (data && data.success) {
+                // Cache-busting: reload with new version param
+                window.location.href = window.location.pathname + '?v=' + Date.now();
+                return;
+            } else {
+                setError(data?.error || 'Reset failed.');
+            }
+        } catch (err) {
+            setError((err as Error).message || 'Reset failed.');
+        }
+        setUploading(false);
+    };
+
     const handleCropSave = async () => {
         if (!previewUrl || !croppedAreaPixels) return;
         setUploading(true);
@@ -89,7 +108,8 @@ export function UserProfile() {
                 return;
             }
             if (data && data.success) {
-                window.location.reload();
+                // Cache-busting: reload with new version param
+                window.location.href = window.location.pathname + '?v=' + Date.now();
                 return;
             } else {
                 setError(data?.error || 'Upload failed.');
@@ -269,6 +289,15 @@ export function UserProfile() {
                                         >
                                             <Camera className="w-4 h-4" />
                                             {uploading ? 'Uploading...' : 'Change Picture'}
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="destructive"
+                                            onClick={handleResetAvatar}
+                                            disabled={uploading}
+                                            className="flex items-center gap-2"
+                                        >
+                                            {uploading ? 'Resetting...' : 'Reset Avatar'}
                                         </Button>
                                     </div>
                                     {error && (

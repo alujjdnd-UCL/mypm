@@ -46,6 +46,8 @@ interface MentoringSession {
             upi: string;
         };
     }>;
+    startTime: string;
+    endTime: string;
 }
 
 const MENTOR_ROLES = ['MENTOR', 'SENIOR_MENTOR', 'ADMIN', 'SUPERADMIN'];
@@ -103,6 +105,8 @@ export default function MentorSessionsPage() {
         title: '',
         description: '',
         date: '',
+        startTime: '',
+        endTime: '',
         location: '',
         isPublic: false,
         maxCapacity: ''
@@ -135,12 +139,15 @@ export default function MentorSessionsPage() {
     const handleCreateSession = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Combine date and times into ISO strings
+            const startTimeISO = formData.date && formData.startTime ? new Date(`${formData.date}T${formData.startTime}`).toISOString() : null;
+            const endTimeISO = formData.date && formData.endTime ? new Date(`${formData.date}T${formData.endTime}`).toISOString() : null;
             const response = await fetch('/api/sessions', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, startTime: startTimeISO, endTime: endTimeISO }),
             });
 
             if (!response.ok) {
@@ -153,6 +160,8 @@ export default function MentorSessionsPage() {
                 title: '',
                 description: '',
                 date: '',
+                startTime: '',
+                endTime: '',
                 location: '',
                 isPublic: false,
                 maxCapacity: ''
@@ -280,13 +289,33 @@ export default function MentorSessionsPage() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-2">Date & Time</label>
+                                    <label className="block text-sm font-medium mb-2">Date</label>
                                     <Input
-                                        type="datetime-local"
+                                        type="date"
                                         value={formData.date}
                                         onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                                         required
                                     />
+                                </div>
+                                <div className="flex gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Start Time</label>
+                                        <Input
+                                            type="time"
+                                            value={formData.startTime}
+                                            onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                                            required
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">End Time</label>
+                                        <Input
+                                            type="time"
+                                            value={formData.endTime}
+                                            onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                                            required
+                                        />
+                                    </div>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-2">Location</label>
@@ -352,7 +381,7 @@ export default function MentorSessionsPage() {
                     <div className="space-y-6">
                         {sessions.map((session) => (
                             <Card key={session.id} className="overflow-hidden shadow-lg">
-                                <CardHeader className="bg-gradient-to-r from-[#002248] to-[#003366] text-white p-0">
+                                <div className="bg-gradient-to-r from-[#002248] to-[#003366] text-white rounded-t-lg">
                                     <div className="p-6">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -385,7 +414,7 @@ export default function MentorSessionsPage() {
                                             </div>
                                         </div>
                                     </div>
-                                </CardHeader>
+                                </div>
                                 <CardContent className="p-6">
                                     {session.description && (
                                         <p className="text-gray-600 mb-4">{session.description}</p>
@@ -469,7 +498,9 @@ function EditSessionForm({
     const [formData, setFormData] = useState({
         title: session.title,
         description: session.description || '',
-        date: new Date(session.date).toISOString().slice(0, 16),
+        date: new Date(session.date).toISOString().slice(0, 10),
+        startTime: session.startTime ? new Date(session.startTime).toISOString().slice(11, 16) : '',
+        endTime: session.endTime ? new Date(session.endTime).toISOString().slice(11, 16) : '',
         location: session.location,
         isPublic: session.isPublic,
         maxCapacity: session.maxCapacity?.toString() || ''
@@ -478,12 +509,15 @@ function EditSessionForm({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            // Combine date and times into ISO strings
+            const startTimeISO = formData.date && formData.startTime ? new Date(`${formData.date}T${formData.startTime}`).toISOString() : null;
+            const endTimeISO = formData.date && formData.endTime ? new Date(`${formData.date}T${formData.endTime}`).toISOString() : null;
             const response = await fetch(`/api/sessions/${session.id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, startTime: startTimeISO, endTime: endTimeISO }),
             });
 
             if (!response.ok) {
@@ -519,13 +553,33 @@ function EditSessionForm({
                 />
             </div>
             <div>
-                <label className="block text-sm font-medium mb-2">Date & Time</label>
+                <label className="block text-sm font-medium mb-2">Date</label>
                 <Input
-                    type="datetime-local"
+                    type="date"
                     value={formData.date}
                     onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                     required
                 />
+            </div>
+            <div className="flex gap-4">
+                <div>
+                    <label className="block text-sm font-medium mb-2">Start Time</label>
+                    <Input
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        required
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-2">End Time</label>
+                    <Input
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        required
+                    />
+                </div>
             </div>
             <div>
                 <label className="block text-sm font-medium mb-2">Location</label>
