@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
   // Convert messages to Anthropic format
   const anthropicMessages = messages.map((m: { role: string; content: string }) => ({
-    role: m.role === 'user' ? 'user' as const : 'assistant' as const, // keep 'assistant' for API
+    role: m.role === 'user' ? 'user' as const : 'assistant' as const,
     content: [{ type: 'text' as const, text: m.content }],
   }));
 
@@ -144,7 +144,7 @@ export async function POST(req: NextRequest) {
   })), null, 2);
 
   const systemPrompt = `
-You are Pimento, a helpful assistant for a programming mentorship dashboard. Be concise but informative.
+You are a helpful assistant for a programming mentorship dashboard. Be concise but informative.
 - When answering, use markdown for clarity and variety:
   - Use bullet points for lists or options.
   - Use **bold** for key terms, session names, or actions.
@@ -160,7 +160,7 @@ You are Pimento, a helpful assistant for a programming mentorship dashboard. Be 
 
 Example:
 User: Suggest a session for learning algorithms
-Pimento:
+Assistant:
 **Here are some great options for learning algorithms:**
 
 - **Python Basics**

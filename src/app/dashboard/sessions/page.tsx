@@ -671,6 +671,7 @@ export default function SessionsPage() {
             {selectedSession && (
                 <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
                     <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl shadow-2xl border-0">
+                        <DialogTitle className="sr-only">{selectedSession.title}</DialogTitle>
                         {/* Header */}
                         <div className="bg-gradient-to-r from-[#002248] to-[#003366] px-8 py-6">
                             <h2 className="text-2xl md:text-3xl font-bold text-white mb-1" style={{ fontFamily: 'Literata, serif' }}>{selectedSession.title}</h2>

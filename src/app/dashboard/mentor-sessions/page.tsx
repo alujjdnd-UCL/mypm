@@ -48,6 +48,7 @@ interface MentoringSession {
     }>;
     startTime: string;
     endTime: string;
+    mentorId: string; // Added mentorId to the interface
 }
 
 const MENTOR_ROLES = ['MENTOR', 'SENIOR_MENTOR', 'ADMIN', 'SUPERADMIN'];
@@ -365,7 +366,7 @@ export default function MentorSessionsPage() {
                 </div>
 
                 {/* Sessions List */}
-                {sessions.length === 0 ? (
+                {user && user.id && sessions.length === 0 ? (
                     <Card className="p-8 text-center">
                         <CardContent>
                             <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -377,7 +378,8 @@ export default function MentorSessionsPage() {
                             </Button>
                         </CardContent>
                     </Card>
-                ) : (
+                ) : null}
+                {user && user.id && sessions.length > 0 && (
                     <div className="space-y-8">
                         {sessions.map((session) => (
                             <div key={session.id} className="rounded-2xl shadow-lg bg-white overflow-hidden">
@@ -404,16 +406,18 @@ export default function MentorSessionsPage() {
                                                 Manage Attendance
                                             </Button>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => setEditingSession(session)}>
-                                                <Edit className="w-4 h-4 mr-1" />
-                                                Edit
-                                            </Button>
-                                            <Button variant="outline" size="sm" onClick={() => handleDeleteSession(session.id)} className="text-red-600 hover:text-red-700">
-                                                <Trash2 className="w-4 h-4 mr-1" />
-                                                Delete
-                                            </Button>
-                                        </div>
+                                        {user.id === session.mentorId && (
+                                            <div className="flex items-center gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => setEditingSession(session)}>
+                                                    <Edit className="w-4 h-4 mr-1" />
+                                                    Edit
+                                                </Button>
+                                                <Button variant="outline" size="sm" onClick={() => handleDeleteSession(session.id)} className="text-red-600 hover:text-red-700">
+                                                    <Trash2 className="w-4 h-4 mr-1" />
+                                                    Delete
+                                                </Button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

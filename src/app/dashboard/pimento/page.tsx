@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 // Helper to format session time range (robust to missing/invalid dates)
 function formatSessionTime(session: any) {
@@ -42,9 +43,12 @@ function hasSessionSuggestionBlock(content: string) {
   return /<!--SESSION_SUGGESTIONS_START-->[\s\S]*?<!--SESSION_SUGGESTIONS_END-->/.test(content);
 }
 
-export default function AssistantPage() {
+export default function PimentoPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const promptSentRef = useRef(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: 'Hi! I am your Smart Assistant. I can suggest sessions and book them for you. How can I help?' }
+    { role: 'pimento', content: 'Hi! I am Pimento, your smart session assistant. I can suggest sessions and book them for you. How can I help?' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,9 +76,10 @@ export default function AssistantPage() {
   }
 
   // Streaming fetch for assistant response
-  const handleSend = async () => {
-    if (!input.trim()) return;
-    setMessages([...messages, { role: 'user', content: input }]);
+  const handleSend = async (overrideInput?: string) => {
+    const messageToSend = overrideInput !== undefined ? overrideInput : input;
+    if (!messageToSend.trim()) return;
+    setMessages(prev => [...prev, { role: 'user', content: messageToSend }]);
     setInput('');
     setLoading(true);
     setError(null);
@@ -83,7 +88,7 @@ export default function AssistantPage() {
       const res = await fetch('/api/assistant/claude', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: [...messages, { role: 'user', content: input }] }),
+        body: JSON.stringify({ messages: [...messages, { role: 'user', content: messageToSend }] }),
       });
       if (!res.ok) {
         const err = await res.json();
@@ -110,7 +115,7 @@ export default function AssistantPage() {
           setTimeout(streamStep, 4 + Math.random() * 10); // Faster streaming
         } else {
           // Reconstruct the full message with the pre-rendered block
-          setMessages(msgs => [...msgs, { role: 'assistant', content: text + preRenderedBlock }]);
+          setMessages(msgs => [...msgs, { role: 'pimento', content: text + preRenderedBlock }]);
           setStreamedResponse('');
           setLoading(false);
         }
@@ -162,7 +167,7 @@ export default function AssistantPage() {
 
   // Fetch full details for all session suggestions when they change
   useEffect(() => {
-    const lastAssistantMsg = messages.filter((m: { role: string }) => m.role === 'assistant').slice(-1)[0];
+    const lastAssistantMsg = messages.filter((m: { role: string }) => m.role === 'pimento').slice(-1)[0];
     if (!lastAssistantMsg) return;
     const suggestions: { id: string }[] | null = parseSessionSuggestions(lastAssistantMsg.content);
     if (suggestions && suggestions.length > 0) {
@@ -183,6 +188,19 @@ export default function AssistantPage() {
     // eslint-disable-next-line
   }, [messages]);
 
+  useEffect(() => {
+    const prompt = searchParams.get('prompt');
+    if (prompt && !promptSentRef.current) {
+      promptSentRef.current = true;
+      setInput(prompt);
+      setTimeout(() => {
+        handleSend(prompt);
+        router.replace('/dashboard/pimento');
+      }, 100);
+    }
+    // eslint-disable-next-line
+  }, []);
+
   // Scroll to bottom on new message/stream
   React.useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -190,11 +208,11 @@ export default function AssistantPage() {
 
   return (
     <SidebarLayout>
-      <PageHeader icon={<Sparkles className="w-10 h-10" />} title="Smart Assistant" />
+      <PageHeader icon={<Sparkles className="w-10 h-10" />} title="Pimento" />
       <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-0 mt-6 flex flex-col h-[80vh] min-h-[600px]">
         <div className="flex-1 overflow-y-auto flex flex-col gap-4 px-8 py-8" style={{ background: '#f7f8fa' }}>
           {messages.map((msg, i) => {
-            if (msg.role === 'assistant') {
+            if (msg.role === 'pimento') {
               const suggestions = parseSessionSuggestions(msg.content);
               return (
                 <div key={i} className="flex justify-start">
@@ -268,7 +286,7 @@ export default function AssistantPage() {
               </div>
             </div>
           )}
-          {loading && !streamedResponse && <div className="text-gray-400 text-sm">Smart Assistant is thinking...</div>}
+          {loading && !streamedResponse && <div className="text-gray-400 text-sm">Pimento is thinking...</div>}
           {error && <div className="text-red-500 text-sm">{error}</div>}
           <div ref={chatEndRef} />
         </div>
@@ -281,7 +299,7 @@ export default function AssistantPage() {
             onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
             disabled={loading || !!streamedResponse}
           />
-          <Button onClick={handleSend} disabled={loading || !input.trim() || !!streamedResponse} className="bg-[#002248] hover:bg-[#003366] text-base px-8 py-3">Send</Button>
+          <Button onClick={() => handleSend()} disabled={loading || !input.trim() || !!streamedResponse} className="bg-[#002248] hover:bg-[#003366] text-base px-8 py-3">Send</Button>
         </div>
       </div>
       {/* Session Details Dialog */}

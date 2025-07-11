@@ -8,22 +8,54 @@ import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PERMISSIONS } from '@/lib/rbac';
-import { Users, BookOpen, Code } from 'lucide-react';
+import { Users, BookOpen, Code, Sparkles } from 'lucide-react';
 import SidebarLayout from '@/components/SidebarLayout';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const [showDebug, setShowDebug] = useState(false);
+    const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [showPopup, setShowPopup] = useState(false);
+    const [popupAnnouncement, setPopupAnnouncement] = useState<any | null>(null);
+    const [pimentoPrompt, setPimentoPrompt] = useState('');
 
     // Require authentication and user:read permission
     useRequireAuth({ requiredPermission: PERMISSIONS.USER_READ });
 
-    useEffect(() => {
-        if (!loading && !user) {
-            router.push('/login');
+    const handleAskPimento = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (pimentoPrompt.trim()) {
+            router.push(`/dashboard/pimento?prompt=${encodeURIComponent(pimentoPrompt)}`);
         }
-    }, [user, loading, router]);
+    };
+
+    useEffect(() => {
+        if (!loading && user) {
+            fetch('/api/admin/announcements')
+                .then(res => res.json())
+                .then(data => {
+                    setAnnouncements(data.announcements || []);
+                    // Find the latest unseen announcement
+                    const unseen = (data.announcements || []).find((a: any) => !a.seenBy || a.seenBy.length === 0);
+                    if (unseen) {
+                        setPopupAnnouncement(unseen);
+                        setShowPopup(true);
+                    }
+                });
+        }
+    }, [user, loading]);
+
+    const handleClosePopup = async () => {
+        setShowPopup(false);
+        if (popupAnnouncement) {
+            await fetch('/api/admin/announcements/seen', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ announcementId: popupAnnouncement.id }),
+            });
+        }
+    };
 
     if (loading) {
         return (
@@ -60,85 +92,74 @@ export default function DashboardPage() {
                 </section>
 
                 {/* Announcements */}
-                <section className="w-full bg-white border-b">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
-                        <h2 className={`text-2xl md:text-3xl font-semibold text-[#002248] mb-4 flex items-center gap-2 ${literata}`}>
-                        <span role="img" aria-label="announcements">📢</span> Announcements
-                    </h2>
-                        <div className="space-y-3">
-                            <Card className="shadow-sm border-0 bg-[#e3eafc]">
-                                <CardContent className="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3">
-                                    <span className="font-semibold text-[#002248]">[18 Mar 2026]</span>
-                                    <span className="ml-0 md:ml-2 text-[#002248]">Open sessions are now available to book!</span>
-                        </CardContent>
-                    </Card>
-                        </div>
-                        <div className="text-right text-sm font-semibold mt-2">
-                            <Link href="#" className="hover:underline text-[#002248]">See past announcements →</Link>
+                <section className="w-full bg-[#f7f8fa] py-10">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow p-8 border border-[#e3eafc]">
+                            <h2 className="text-2xl md:text-3xl font-bold text-[#002248] mb-6 flex items-center gap-2" style={{ fontFamily: 'Literata, serif' }}>
+                                <span role="img" aria-label="announcements">📢</span> Announcements
+                            </h2>
+                            <div className="space-y-4">
+                                {announcements.length === 0 && <div className="text-gray-400 text-center">No announcements yet.</div>}
+                                {announcements.map(a => (
+                                    <div key={a.id} className="rounded-lg bg-[#f7f8fa] p-4 border border-[#e3eafc] flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                        <div>
+                                            <div className="font-bold text-[#002248] text-lg mb-1">{a.title}</div>
+                                            <div className="text-[#002248] text-sm mb-1 whitespace-pre-line">{a.content}</div>
+                                            <div className="text-xs text-gray-500">By {a.createdBy?.firstName} {a.createdBy?.lastName} ({a.createdBy?.role}) • {new Date(a.createdAt).toLocaleString()}</div>
+                                        </div>
+                                        {(!a.seenBy || a.seenBy.length === 0) && (
+                                            <span className="inline-block bg-yellow-100 text-yellow-800 text-xs px-3 py-1 rounded-full font-semibold mt-2 md:mt-0">New</span>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Main Dashboard Actions */}
-                <section className="w-full bg-[#f7f8fa]">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                            <Link href="/dashboard/my-group" className="group">
-                                <Card className="flex flex-col items-center justify-center py-10 shadow-lg bg-[#009688] hover:bg-[#00796b] transition text-white rounded-xl group-hover:scale-[1.03] group-active:scale-100">
-                                    <CardContent className="flex flex-col items-center">
-                                        <Users className="w-10 h-10 mb-3" />
-                                        <span className="text-xl md:text-2xl font-bold font-geist-mono">My Group</span>
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                            <Link href="#" className="group">
-                                <Card className="flex flex-col items-center justify-center py-10 shadow-lg bg-[#ff6f1b] hover:bg-[#e65100] transition text-white rounded-xl group-hover:scale-[1.03] group-active:scale-100">
-                                    <CardContent className="flex flex-col items-center">
-                                        <BookOpen className="w-10 h-10 mb-3" />
-                                        <span className="text-xl md:text-2xl font-bold font-geist-mono">My Sessions</span>
-                                    </CardContent>
-                    </Card>
-                        </Link>
-                            <Link href="#" className="group">
-                                <Card className="flex flex-col items-center justify-center py-10 shadow-lg bg-[#8a004f] hover:bg-[#5a0033] transition text-white rounded-xl group-hover:scale-[1.03] group-active:scale-100">
-                                    <CardContent className="flex flex-col items-center">
-                                        <Code className="w-10 h-10 mb-3" />
-                                        <span className="text-xl md:text-2xl font-bold font-geist-mono">Resources</span>
-                                    </CardContent>
-                    </Card>
-                        </Link>
-                            <Link href="/profile" className="group">
-                                <Card className="flex flex-col items-center justify-center py-10 shadow-lg bg-[#002248] hover:bg-[#00132b] transition text-white rounded-xl group-hover:scale-[1.03] group-active:scale-100">
-                                    <CardContent className="flex flex-col items-center">
-                                        <Users className="w-10 h-10 mb-3" />
-                                        <span className="text-xl md:text-2xl font-bold font-geist-mono">My Profile</span>
-                                    </CardContent>
-                    </Card>
-                            </Link>
+                {/* Ask Pimento */}
+                <section className="w-full bg-[#f7f8fa] pb-12">
+                    <div className="max-w-4xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow p-8 border border-[#e3eafc] flex flex-col md:flex-row md:items-center md:gap-8">
+                            <div className="flex items-center gap-4 mb-6 md:mb-0 md:w-1/3">
+                                <div className="bg-gradient-to-br from-[#ffb347] to-[#ffcc80] rounded-full p-3 shadow">
+                                    <Sparkles className="w-10 h-10 text-[#ff6f1b]" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl md:text-2xl font-bold text-[#002248] mb-1" style={{ fontFamily: 'Literata, serif' }}>Ask Pimento</h3>
+                                    <p className="text-gray-600 text-base">Need help or have a question? Ask Pimento, your smart session assistant!</p>
+                                </div>
+                            </div>
+                            <form onSubmit={handleAskPimento} className="flex-1 flex gap-4 items-center">
+                                <input
+                                    type="text"
+                                    className="flex-1 border border-[#e3eafc] rounded-lg px-6 py-4 text-lg focus:outline-none focus:ring-2 focus:ring-[#ffb347] bg-[#f7f8fa] shadow-sm"
+                                    placeholder="Ask Pimento a question..."
+                                    value={pimentoPrompt}
+                                    onChange={e => setPimentoPrompt(e.target.value)}
+                                />
+                                <button
+                                    type="submit"
+                                    className="bg-[#ff6f1b] hover:bg-[#e65100] text-white font-semibold px-8 py-4 rounded-lg shadow transition text-lg"
+                                >
+                                    Ask
+                                </button>
+                            </form>
                         </div>
-                </div>
+                    </div>
                 </section>
 
-                {/* Debug View (hidden on mobile) */}
-                <section className="hidden md:block w-full bg-white border-t">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                    <Button
-                        variant="link"
-                        size="sm"
-                            className="text-xs text-[#002248] underline mb-2"
-                        onClick={() => setShowDebug((v) => !v)}
-                    >
-                        {showDebug ? 'Hide Debug View' : 'Show Debug View'}
-                    </Button>
-                    {showDebug && (
-                        <div className="bg-white border border-gray-200 rounded-lg p-4 mt-2">
-                            <h3 className="font-bold mb-2">Debug View</h3>
-                            <pre className="text-xs text-gray-700 overflow-x-auto mb-4">{JSON.stringify({ user, loading }, null, 2)}</pre>
-                            <UserProfile />
-                        </div>
-                    )}
-                </div>
-                </section>
+                {/* Announcement Popup */}
+                <Dialog open={showPopup} onOpenChange={setShowPopup}>
+                    <DialogContent className="max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>{popupAnnouncement?.title}</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-[#002248] whitespace-pre-line mb-2">{popupAnnouncement?.content}</div>
+                        <div className="text-xs text-gray-500 mb-2">By {popupAnnouncement?.createdBy?.firstName} {popupAnnouncement?.createdBy?.lastName} ({popupAnnouncement?.createdBy?.role}) • {popupAnnouncement && new Date(popupAnnouncement.createdAt).toLocaleString()}</div>
+                        <Button className="w-full bg-[#002248] hover:bg-[#003366] mt-2" onClick={handleClosePopup}>Dismiss</Button>
+                    </DialogContent>
+                </Dialog>
             </main>
         </SidebarLayout>
     );

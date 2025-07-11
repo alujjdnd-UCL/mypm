@@ -51,6 +51,10 @@ model User {
   hostedSessions MentoringSession[] @relation("SessionMentor")
   sessionAttendances SessionAttendance[]
 
+  // Announcement relations
+  announcements Announcement[]
+  announcementSeens AnnouncementSeen[]
+
   @@map("users")
 }
 
@@ -121,6 +125,27 @@ model Onboarding {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("onboarding")
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdById String
+  seenBy      AnnouncementSeen[]
+}
+
+model AnnouncementSeen {
+  id             String   @id @default(cuid())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  announcement   Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  announcementId String
+  seenAt         DateTime @default(now())
+
+  @@unique([userId, announcementId])
 }
 
 enum Role {

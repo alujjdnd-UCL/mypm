@@ -120,14 +120,14 @@ export default function GroupAdminPage() {
     );
   }
 
-  const mentors = allUsers.filter((u) => u.role === "MENTOR");
-  const students = allUsers.filter((u) => u.role === "STUDENT");
+  const mentors = allUsers;
+  const students = allUsers;
 
   const handleMentorChange = (groupId: number, mentorId: string) => {
     setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, mentorId } : g)));
   };
   const handleMenteesChange = (groupId: number, menteeIds: string[]) => {
-    setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, mentees: students.filter((s: User) => menteeIds.includes(s.id)) } : g)));
+    setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, mentees: allUsers.filter((s: User) => menteeIds.includes(s.id)) } : g)));
   };
   const handleInfoChange = (groupId: number, info: string) => {
     setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, info } : g)));
@@ -316,7 +316,7 @@ export default function GroupAdminPage() {
                   {/* Search box */}
                   <input
                     type="text"
-                    placeholder="Search students..."
+                    placeholder="Search users..."
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 text-sm"
                     value={menteeSearch[editingGroup.id] || ""}
                     onChange={e => setMenteeSearch(s => ({ ...s, [editingGroup.id]: e.target.value }))}
@@ -326,8 +326,8 @@ export default function GroupAdminPage() {
                     <button
                       type="button"
                       className="text-xs px-2 py-1 rounded bg-gray-100 hover:bg-gray-200 border border-gray-200"
-                      onClick={() => handleMenteesChange(editingGroup.id, students.map(s => s.id))}
-                      disabled={editingGroup.mentees?.length === students.length && students.length > 0}
+                      onClick={() => handleMenteesChange(editingGroup.id, allUsers.map(s => s.id))}
+                      disabled={editingGroup.mentees?.length === allUsers.length && allUsers.length > 0}
                     >
                       Select All
                     </button>
@@ -342,14 +342,14 @@ export default function GroupAdminPage() {
                   </div>
                   {/* Scrollable list of checkboxes */}
                   <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto bg-white">
-                    {students.filter(s =>
+                    {allUsers.filter(s =>
                       s.firstName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.lastName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.email.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase())
                     ).length === 0 && (
-                        <div className="text-xs text-gray-400 p-3">No students found</div>
+                        <div className="text-xs text-gray-400 p-3">No users found</div>
                       )}
-                    {students.filter(s =>
+                    {allUsers.filter(s =>
                       s.firstName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.lastName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.email.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase())

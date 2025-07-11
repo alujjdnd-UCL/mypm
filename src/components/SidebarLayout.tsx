@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
-import { Users, BookOpen, Code, User, LayoutDashboard, Menu, X, Shield, Sparkles } from 'lucide-react';
+import { Users, BookOpen, Code, User, LayoutDashboard, Menu, X, Shield, Sparkles, Megaphone } from 'lucide-react';
 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ const inter = 'font-inter';
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/assistant', label: 'Assistant', icon: Sparkles },
+  { href: '/dashboard/pimento', label: 'Pimento', icon: Sparkles },
   { href: '/dashboard/my-group', label: 'My Group', icon: Users },
   { href: '/dashboard/sessions', label: 'Sessions', icon: BookOpen },
   { href: '/profile', label: 'My Profile', icon: User },
@@ -25,6 +25,7 @@ const mentorLinks = [
 
 const adminLinks = [
   { href: '/group-admin', label: 'Group Administration', icon: Shield },
+  { href: '/dashboard/announcements-admin', label: 'Announcements Admin', icon: Megaphone },
 ];
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
@@ -54,7 +55,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
             <Link key={link.href} href={link.href} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#003366] transition font-medium">
               <link.icon className="w-5 h-5" />
               <span className={inter + ' flex items-center'}>{link.label}
-                {link.label === 'Assistant' && (
+                {link.label === 'Pimento' && (
                   <Badge
                     className="ml-2 px-1 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-700 border border-yellow-200 rounded"
                     style={{ borderRadius: '4px', minWidth: '18px', boxShadow: 'none' }}
