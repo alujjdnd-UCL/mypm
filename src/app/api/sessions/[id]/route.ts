@@ -119,6 +119,8 @@ export async function PUT(
         }
 
         // Update the session
+        // Always set category to the group's category
+        const group = await db.group.findUnique({ where: { id: existingSession.groupId } });
         const session = await db.mentoringSession.update({
             where: { id: sessionId },
             data: {
@@ -128,6 +130,7 @@ export async function PUT(
                 location,
                 isPublic: Boolean(isPublic),
                 maxCapacity: maxCapacity ? parseInt(maxCapacity) : null,
+                category: group?.category || existingSession.category,
             },
             include: {
                 group: true,

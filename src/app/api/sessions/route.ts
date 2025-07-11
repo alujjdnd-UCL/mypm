@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
                 endTime: endTime ? new Date(endTime) : null,
                 location,
                 isPublic: Boolean(isPublic),
-                category: mentorGroup.category,
+                category: mentorGroup.category, // Always inherit from group
                 maxCapacity: maxCapacity ? parseInt(maxCapacity) : null,
                 mentorId: user.id,
                 groupId: mentorGroup.id,

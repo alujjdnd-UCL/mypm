@@ -378,81 +378,45 @@ export default function MentorSessionsPage() {
                         </CardContent>
                     </Card>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {sessions.map((session) => (
-                            <Card key={session.id} className="overflow-hidden shadow-lg">
-                                <div className="bg-gradient-to-r from-[#002248] to-[#003366] text-white rounded-t-lg">
-                                    <div className="p-6">
-                                        <div className="flex items-center justify-between">
-                                            <div>
-                                                <CardTitle className="text-xl mb-2">{session.title}</CardTitle>
-                                                <div className="flex items-center gap-4 text-sm text-white/80">
-                                                    <div className="flex items-center gap-1">
-                                                        <Clock className="w-4 h-4" />
-                                                        {format(new Date(session.date), 'PPP p')}
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <MapPin className="w-4 h-4" />
-                                                        {session.location}
-                                                    </div>
-                                                    <div className="flex items-center gap-1">
-                                                        <Users className="w-4 h-4" />
-                                                        {session.attendances.length} registered
-                                                        {session.maxCapacity && ` (+${session.maxCapacity} extra spots)`}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Badge className={`${getCategoryColor(session.category)} border-white/20`}>
-                                                    {getCategoryLabel(session.category)}
-                                                </Badge>
-                                                {session.isPublic && (
-                                                    <Badge variant="outline" className="text-green-300 border-green-300 bg-green-300/10">
-                                                        Public
-                                                    </Badge>
-                                                )}
-                                            </div>
+                            <div key={session.id} className="rounded-2xl shadow-lg bg-white overflow-hidden">
+                                <div className="bg-gradient-to-r from-[#002248] to-[#003366] text-white rounded-t-2xl px-8 py-6 flex flex-col md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                        <div className="text-2xl font-bold mb-2" style={{ fontFamily: 'Literata, serif' }}>{session.title}</div>
+                                        <div className="flex flex-wrap items-center gap-6 text-white/90 text-sm">
+                                            <div className="flex items-center gap-2"><Clock className="w-4 h-4" />{format(new Date(session.date), 'PPP p')}</div>
+                                            <div className="flex items-center gap-2"><MapPin className="w-4 h-4" />{session.location}</div>
+                                            <div className="flex items-center gap-2"><Users className="w-4 h-4" />{session.attendances.length} registered{session.maxCapacity && ` (+${session.maxCapacity} extra)`}</div>
                                         </div>
                                     </div>
+                                    <div className="flex flex-wrap gap-2 mt-4 md:mt-0 md:ml-6">
+                                        <Badge className={`${getCategoryColor(session.category)} border-white/20`}>{getCategoryLabel(session.category)}</Badge>
+                                        {session.isPublic && <Badge variant="outline" className="text-green-300 border-green-300 bg-green-300/10">Public</Badge>}
+                                    </div>
                                 </div>
-                                <CardContent className="p-6">
-                                    {session.description && (
-                                        <p className="text-gray-600 mb-4">{session.description}</p>
-                                    )}
-
-                                    <div className="flex items-center justify-between">
+                                <div className="px-8 py-6">
+                                    {session.description && <div className="text-gray-700 mb-4 text-base">{session.description}</div>}
+                                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setAttendanceSession(session)}
-                                            >
+                                            <Button variant="outline" size="sm" onClick={() => setAttendanceSession(session)}>
                                                 <UserCheck className="w-4 h-4 mr-1" />
                                                 Manage Attendance
                                             </Button>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => setEditingSession(session)}
-                                            >
+                                            <Button variant="outline" size="sm" onClick={() => setEditingSession(session)}>
                                                 <Edit className="w-4 h-4 mr-1" />
                                                 Edit
                                             </Button>
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => handleDeleteSession(session.id)}
-                                                className="text-red-600 hover:text-red-700"
-                                            >
+                                            <Button variant="outline" size="sm" onClick={() => handleDeleteSession(session.id)} className="text-red-600 hover:text-red-700">
                                                 <Trash2 className="w-4 h-4 mr-1" />
                                                 Delete
                                             </Button>
                                         </div>
                                     </div>
-                                </CardContent>
-                            </Card>
+                                </div>
+                            </div>
                         ))}
                     </div>
                 )}
@@ -503,7 +467,7 @@ function EditSessionForm({
         endTime: session.endTime ? new Date(session.endTime).toISOString().slice(11, 16) : '',
         location: session.location,
         isPublic: session.isPublic,
-        maxCapacity: session.maxCapacity?.toString() || ''
+        maxCapacity: session.maxCapacity?.toString() || '',
     });
 
     const handleSubmit = async (e: React.FormEvent) => {

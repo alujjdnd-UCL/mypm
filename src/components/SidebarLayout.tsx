@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from './AuthProvider';
-import { Users, BookOpen, Code, User, LayoutDashboard, Menu, X, Shield } from 'lucide-react';
+import { Users, BookOpen, Code, User, LayoutDashboard, Menu, X, Shield, Sparkles } from 'lucide-react';
 
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/my-group', label: 'My Group', icon: Users },
   { href: '/dashboard/sessions', label: 'Sessions', icon: BookOpen },
+  { href: '/dashboard/assistant', label: 'Assistant', icon: Sparkles },
   { href: '/profile', label: 'My Profile', icon: User },
 ];
 
