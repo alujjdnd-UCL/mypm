@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ groups });
 }
 
+// POST /api/admin/groups - Create a new group
 export async function POST(request: NextRequest) {
   const sessionToken = request.cookies.get('session')?.value;
   if (!sessionToken) {
@@ -29,11 +30,20 @@ export async function POST(request: NextRequest) {
   if (!user || !ADMIN_ROLES.includes(user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const existing = await db.group.findMany({ select: { groupNumber: true } });
-  const used = new Set(existing.map(g => g.groupNumber));
-  let groupNumber = 1;
-  while (used.has(groupNumber)) groupNumber++;
-  const group = await db.group.create({ data: { groupNumber } });
+
+  // Get the next available group number
+  const lastGroup = await db.group.findFirst({
+    orderBy: { groupNumber: 'desc' },
+  });
+  const nextGroupNumber = (lastGroup?.groupNumber || 0) + 1;
+
+  const group = await db.group.create({
+    data: {
+      groupNumber: nextGroupNumber,
+      category: 'CS_BSC_MENG', // Default category
+    },
+    include: { mentor: true, mentees: true },
+  });
   return NextResponse.json({ group });
 }
 
@@ -46,11 +56,12 @@ export async function PUT(request: NextRequest) {
   if (!user || !ADMIN_ROLES.includes(user.role)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
-  const { id, mentorId, menteeIds, info } = await request.json();
+  const { id, mentorId, menteeIds, category, info } = await request.json();
   const group = await db.group.update({
     where: { id },
     data: {
       mentorId,
+      category,
       info,
       mentees: {
         set: menteeIds.map((id: string) => ({ id })),
@@ -73,4 +84,4 @@ export async function DELETE(request: NextRequest) {
   const { id } = await request.json();
   await db.group.delete({ where: { id } });
   return NextResponse.json({ success: true });
-} 
+}

@@ -15,6 +15,13 @@ export const PERMISSIONS = {
     ADMIN_READ: { resource: 'admin', action: 'read' },
     ADMIN_WRITE: { resource: 'admin', action: 'write' },
 
+    // Session permissions
+    SESSION_READ: { resource: 'session', action: 'read' },
+    SESSION_CREATE: { resource: 'session', action: 'create' },
+    SESSION_UPDATE: { resource: 'session', action: 'update' },
+    SESSION_DELETE: { resource: 'session', action: 'delete' },
+    SESSION_MANAGE_ATTENDANCE: { resource: 'session', action: 'manage_attendance' },
+
     // Timetable permissions
     TIMETABLE_READ: { resource: 'timetable', action: 'read' },
     TIMETABLE_WRITE: { resource: 'timetable', action: 'write' },
@@ -24,17 +31,28 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     [UserRole.STUDENT]: [
         PERMISSIONS.USER_READ,
         PERMISSIONS.USER_UPDATE,
+        PERMISSIONS.SESSION_READ,
         PERMISSIONS.TIMETABLE_READ,
     ],
     [UserRole.MENTOR]: [
         PERMISSIONS.USER_READ,
         PERMISSIONS.USER_UPDATE,
+        PERMISSIONS.SESSION_READ,
+        PERMISSIONS.SESSION_CREATE,
+        PERMISSIONS.SESSION_UPDATE,
+        PERMISSIONS.SESSION_DELETE,
+        PERMISSIONS.SESSION_MANAGE_ATTENDANCE,
         PERMISSIONS.TIMETABLE_READ,
         PERMISSIONS.TIMETABLE_WRITE,
     ],
     [UserRole.SENIOR_MENTOR]: [
         PERMISSIONS.USER_READ,
         PERMISSIONS.USER_UPDATE,
+        PERMISSIONS.SESSION_READ,
+        PERMISSIONS.SESSION_CREATE,
+        PERMISSIONS.SESSION_UPDATE,
+        PERMISSIONS.SESSION_DELETE,
+        PERMISSIONS.SESSION_MANAGE_ATTENDANCE,
         PERMISSIONS.TIMETABLE_READ,
         PERMISSIONS.TIMETABLE_WRITE,
         // Add more senior mentor permissions here if needed
@@ -45,6 +63,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         PERMISSIONS.USER_DELETE,
         PERMISSIONS.ADMIN_READ,
         PERMISSIONS.ADMIN_WRITE,
+        PERMISSIONS.SESSION_READ,
+        PERMISSIONS.SESSION_CREATE,
+        PERMISSIONS.SESSION_UPDATE,
+        PERMISSIONS.SESSION_DELETE,
+        PERMISSIONS.SESSION_MANAGE_ATTENDANCE,
         PERMISSIONS.TIMETABLE_READ,
         PERMISSIONS.TIMETABLE_WRITE,
     ],
@@ -54,6 +77,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
         PERMISSIONS.USER_DELETE,
         PERMISSIONS.ADMIN_READ,
         PERMISSIONS.ADMIN_WRITE,
+        PERMISSIONS.SESSION_READ,
+        PERMISSIONS.SESSION_CREATE,
+        PERMISSIONS.SESSION_UPDATE,
+        PERMISSIONS.SESSION_DELETE,
+        PERMISSIONS.SESSION_MANAGE_ATTENDANCE,
         PERMISSIONS.TIMETABLE_READ,
         PERMISSIONS.TIMETABLE_WRITE,
         // Add more superadmin permissions here if needed

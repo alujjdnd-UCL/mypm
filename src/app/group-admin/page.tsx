@@ -20,6 +20,7 @@ interface User {
 interface Group {
   id: number;
   groupNumber: number;
+  category: string;
   info: string;
   mentorId?: string;
   mentor?: User;
@@ -131,6 +132,9 @@ export default function GroupAdminPage() {
   const handleInfoChange = (groupId: number, info: string) => {
     setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, info } : g)));
   };
+  const handleCategoryChange = (groupId: number, category: string) => {
+    setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, category } : g)));
+  };
   const handleSave = async (group: Group) => {
     setSaving(group.id);
     await fetch("/api/admin/groups", {
@@ -140,6 +144,7 @@ export default function GroupAdminPage() {
         id: group.id,
         mentorId: group.mentorId || null,
         menteeIds: group.mentees.map((m: User) => m.id),
+        category: group.category,
         info: group.info || "",
       }),
     });
@@ -201,6 +206,7 @@ export default function GroupAdminPage() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Group</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mentor</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mentees</th>
                 <th className="px-6 py-3" />
@@ -210,6 +216,13 @@ export default function GroupAdminPage() {
               {groups.map(group => (
                 <tr key={group.id} className="hover:bg-blue-50 cursor-pointer" onClick={() => setEditingGroupId(group.id)}>
                   <td className="px-6 py-4 whitespace-nowrap font-semibold text-[#002248]">{group.groupNumber}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                      {group.category === 'CS_BSC_MENG' ? 'Computer Science' :
+                        group.category === 'ROBOTICS_AI_MENG' ? 'Robotics & AI' :
+                          group.category === 'CS_MATHS_MENG' ? 'CS & Maths' : group.category}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {group.mentor ? (
                       <span>{group.mentor.firstName} {group.mentor.lastName}</span>
@@ -235,6 +248,23 @@ export default function GroupAdminPage() {
             </SheetHeader>
             {editingGroup && (
               <div className="space-y-6 p-2">
+                {/* Group Category */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <Edit className="w-4 h-4" />
+                    Group Category
+                  </label>
+                  <select
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2 bg-white focus:ring-2 focus:ring-[#002248] focus:border-transparent transition-all"
+                    value={editingGroup.category || "CS_BSC_MENG"}
+                    onChange={e => handleCategoryChange(editingGroup.id, e.target.value)}
+                  >
+                    <option value="CS_BSC_MENG">Computer Science BSc/MEng</option>
+                    <option value="ROBOTICS_AI_MENG">Robotics and AI MEng</option>
+                    <option value="CS_MATHS_MENG">CS and Mathematics MEng</option>
+                  </select>
+                </div>
+
                 {/* Mentor Assignment */}
                 <div className="space-y-2">
                   <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -317,8 +347,8 @@ export default function GroupAdminPage() {
                       s.lastName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.email.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase())
                     ).length === 0 && (
-                      <div className="text-xs text-gray-400 p-3">No students found</div>
-                    )}
+                        <div className="text-xs text-gray-400 p-3">No students found</div>
+                      )}
                     {students.filter(s =>
                       s.firstName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
                       s.lastName.toLowerCase().includes((menteeSearch[editingGroup.id] || "").toLowerCase()) ||
@@ -403,4 +433,4 @@ export default function GroupAdminPage() {
       </div>
     </SidebarLayout>
   );
-} 
+}

@@ -10,10 +10,14 @@ datasource db {
 model Group {
   id        Int      @id @default(autoincrement()) // Numeric group id (internal)
   groupNumber Int   @unique // Displayed group number, assigned manually
+  category  GroupCategory @default(CS_BSC_MENG) // Group category
   mentor    User?    @relation("MentorGroup", fields: [mentorId], references: [id])
   mentorId  String?  @unique
   mentees   User[]   @relation("MenteeGroup")
   info      String?  // Optional: group resources/info
+
+  // Session relations
+  mentoringSessions MentoringSession[]
 
   @@map("groups")
 }
@@ -42,6 +46,10 @@ model User {
   menteeOf    Group?   @relation("MenteeGroup", fields: [menteeGroupId], references: [id])
   menteeGroupId Int?
 
+  // Mentoring session relations
+  hostedSessions MentoringSession[] @relation("SessionMentor")
+  sessionAttendances SessionAttendance[]
+
   @@map("users")
 }
 
@@ -55,6 +63,46 @@ model Session {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
+}
+
+model MentoringSession {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  date        DateTime
+  startTime   DateTime? // Session start time
+  endTime     DateTime? // Session end time
+  location    String
+  isPublic    Boolean  @default(false) // true for public sessions, false for group-only
+  category    GroupCategory // Session category based on group
+  maxCapacity Int?     // Optional capacity limit
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  mentor      User     @relation("SessionMentor", fields: [mentorId], references: [id])
+  mentorId    String
+  group       Group    @relation(fields: [groupId], references: [id])
+  groupId     Int
+  attendances SessionAttendance[]
+
+  @@map("mentoring_sessions")
+}
+
+model SessionAttendance {
+  id        String   @id @default(cuid())
+  status    AttendanceStatus @default(REGISTERED)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  session   MentoringSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sessionId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([sessionId, userId])
+  @@map("session_attendances")
 }
 
 model Onboarding {
@@ -80,4 +128,17 @@ enum Role {
   SENIOR_MENTOR
   ADMIN
   SUPERADMIN
+}
+
+enum GroupCategory {
+  CS_BSC_MENG         // Computer Science BSc/MEng
+  ROBOTICS_AI_MENG    // Robotics and AI MEng
+  CS_MATHS_MENG       // CS and Mathematics MEng
+}
+
+enum AttendanceStatus {
+  REGISTERED
+  ATTENDED
+  ABSENT
+  CANCELLED
 }

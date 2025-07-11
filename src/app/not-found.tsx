@@ -52,8 +52,8 @@ export default function NotFound() {
         <div style={{ marginBottom: 24 }}>
           INITIATING MEMORY DUMP…<br />
           <span style={{ opacity: 0.8 }}>&gt; Saving stack trace to /mainquad/missing.html</span><br />
-          <span style={{ opacity: 0.8 }}>&gt; Debating with Jeremy Bentham</span><br />
-          <span style={{ opacity: 0.8 }}>&gt; Surfacing redirect protocol…</span>
+          <span style={{ opacity: 0.8 }}>&gt; Asking Jeremy Bentham for directions...</span><br />
+          <span style={{ opacity: 0.8 }}>&gt; Surfacing redirect protocol...</span>
         </div>
         <div>
           <span style={{ display: 'inline-block', marginRight: 8 }}>

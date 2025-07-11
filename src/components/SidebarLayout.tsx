@@ -13,9 +13,12 @@ const inter = 'font-inter';
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/dashboard/my-group', label: 'My Group', icon: Users },
-  { href: '/dashboard/sessions', label: 'My Sessions', icon: BookOpen },
-  { href: '/dashboard/resources', label: 'Resources', icon: Code },
+  { href: '/dashboard/sessions', label: 'Sessions', icon: BookOpen },
   { href: '/profile', label: 'My Profile', icon: User },
+];
+
+const mentorLinks = [
+  { href: '/dashboard/mentor-sessions', label: 'Manage Sessions', icon: Code },
 ];
 
 const adminLinks = [
@@ -27,6 +30,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isAdmin = user && ['ADMIN', 'SENIOR_MENTOR', 'SUPERADMIN'].includes(user.role);
+  const isMentor = user && ['MENTOR', 'SENIOR_MENTOR', 'ADMIN', 'SUPERADMIN'].includes(user.role);
 
   return (
     <div className="min-h-screen flex bg-[#f7f8fa]">
@@ -35,7 +39,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
         {/* Logo & App Name */}
         <Link href="/" className="flex items-center gap-3 px-6 py-5 border-b border-white/10 hover:bg-[#003366] transition">
           <img src="/myPM-logo.png" alt="myPM Logo" className="w-10 h-10 bg-white p-1 rounded-md" />
-          <span 
+          <span
             className="text-white text-2xl font-bold group-hover:underline"
             style={{ fontFamily: 'Literata, serif' }}
           >
@@ -50,8 +54,20 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
               <span className={inter}>{link.label}</span>
             </Link>
           ))}
+          {isMentor && (
+            <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="text-xs text-white/60 uppercase font-semibold mb-2 px-3">Mentor Tools</div>
+              {mentorLinks.map(link => (
+                <Link key={link.href} href={link.href} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#003366] transition font-medium">
+                  <link.icon className="w-5 h-5" />
+                  <span className={inter}>{link.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
           {isAdmin && (
             <div className="mt-6 pt-4 border-t border-white/10">
+              <div className="text-xs text-white/60 uppercase font-semibold mb-2 px-3">Admin Tools</div>
               {adminLinks.map(link => (
                 <Link key={link.href} href={link.href} className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-[#003366] transition font-medium">
                   <link.icon className="w-5 h-5" />
@@ -79,7 +95,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
           {/* Logo & App Name (mobile only) */}
           <div className="flex items-center gap-2 md:hidden">
             <img src="/myPM-logo.png" alt="myPM Logo" className="w-8 h-8 bg-white p-1 rounded-md" />
-            <span 
+            <span
               className="text-xl font-bold text-[#002248]"
               style={{ fontFamily: 'Literata, serif' }}
             >
@@ -91,7 +107,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
           <div className="flex items-center gap-4">
             {user && (
               <>
-                <span 
+                <span
                   className="hidden sm:block text-lg text-[#002248] font-light"
                   style={{ fontFamily: 'Literata, serif' }}
                 >
