@@ -246,27 +246,6 @@ export function UserProfile() {
                         <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                 <div className="w-2 h-2 bg-[#002248] rounded-full"></div>
-                                Permissions
-                            </h3>
-                            <div className="flex flex-wrap gap-2">
-                                {user.permissions && user.permissions.length > 0 ? (
-                                    user.permissions.map(permission => (
-                                        <span
-                                            key={permission}
-                                            className="px-3 py-1 bg-indigo-100 text-indigo-800 text-xs rounded-full font-medium"
-                                        >
-                                            {permission.replace('_', ' ')}
-                                        </span>
-                                    ))
-                                ) : (
-                                    <span className="text-sm text-gray-500 italic">No permissions assigned</span>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                                <div className="w-2 h-2 bg-[#002248] rounded-full"></div>
                                 Profile Settings
                             </h3>
                             <div className="space-y-4">
