@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import SidebarLayout from '@/components/SidebarLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { Calendar, Clock, MapPin, Users, UserCheck, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, UserCheck, UserPlus, ChevronLeft, ChevronRight, Copy, Calendar as CalendarIcon } from 'lucide-react';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, addWeeks, subWeeks, isSameDay, isToday, parseISO } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -101,8 +101,13 @@ export default function SessionsPage() {
     const [error, setError] = useState<string | null>(null);
     const [joiningSession, setJoiningSession] = useState<string | null>(null);
     const [currentWeek, setCurrentWeek] = useState(new Date());
-    const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
+    const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'registered'>('calendar');
     const [selectedSession, setSelectedSession] = useState<MentoringSession | null>(null);
+    const [calendarDialogOpen, setCalendarDialogOpen] = useState(false);
+    const [calendarUrl, setCalendarUrl] = useState('');
+    const [copied, setCopied] = useState(false);
+    const [regenLoading, setRegenLoading] = useState(false);
+    const [regenSuccess, setRegenSuccess] = useState(false);
 
     useRequireAuth({ requiredPermission: PERMISSIONS.USER_READ });
 
@@ -298,6 +303,40 @@ export default function SessionsPage() {
     // Helper to get group label
     const getGroupLabel = (session: MentoringSession) => session.group ? `Group ${session.group.groupNumber}` : '';
 
+    // Fetch/generate the user's calendar token and build the URL
+    const handleOpenCalendarDialog = async () => {
+        if (!user) return;
+        // Call a backend endpoint to ensure/generate the token and return it
+        const res = await fetch(`/api/user/calendar-token`);
+        const data = await res.json();
+        if (data && data.token) {
+            const url = `${window.location.origin}/api/calendar/${user.id}?token=${data.token}`;
+            setCalendarUrl(url);
+            setCalendarDialogOpen(true);
+        }
+    };
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(calendarUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
+
+    const handleRegenerateToken = async () => {
+        if (!user) return;
+        setRegenLoading(true);
+        setRegenSuccess(false);
+        const res = await fetch(`/api/user/calendar-token`, { method: 'POST' });
+        const data = await res.json();
+        if (data && data.token) {
+            const url = `${window.location.origin}/api/calendar/${user.id}?token=${data.token}`;
+            setCalendarUrl(url);
+            setRegenSuccess(true);
+            setTimeout(() => setRegenSuccess(false), 2000);
+        }
+        setRegenLoading(false);
+    };
+
     if (userLoading || loading) {
         return (
             <SidebarLayout>
@@ -330,7 +369,6 @@ export default function SessionsPage() {
     return (
         <SidebarLayout>
             <PageHeader icon={<Calendar className="w-10 h-10" />} title="Programming Sessions" />
-
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
                 {/* View Mode Toggle and Calendar Navigation */}
                 <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
@@ -349,8 +387,14 @@ export default function SessionsPage() {
                         >
                             List View
                         </Button>
+                        <Button
+                            variant={viewMode === 'registered' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setViewMode('registered')}
+                        >
+                            My Registered Sessions
+                        </Button>
                     </div>
-
                     {viewMode === 'calendar' && (
                         <div className="flex items-center gap-2">
                             <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
@@ -519,39 +563,169 @@ export default function SessionsPage() {
                         )}
                     </div>
                 )}
-            </div>
 
+                {/* Registered Sessions View */}
+                {viewMode === 'registered' && (
+                    <div>
+                        <div className="flex justify-end mb-4">
+                            <Button variant="outline" onClick={handleOpenCalendarDialog} className="flex items-center gap-2">
+                                <CalendarIcon className="w-5 h-5" />
+                                Subscribe to Personal Caledar
+                            </Button>
+                        </div>
+                        <h2 className="text-2xl font-bold text-[#002248] mb-6" style={{ fontFamily: 'Literata, serif' }}>
+                            My Registered Sessions
+                        </h2>
+                        {sessions.filter(isUserRegistered).length === 0 ? (
+                            <Card className="p-8 text-center">
+                                <CardContent>
+                                    <Calendar className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                                    <h3 className="text-xl font-semibold text-gray-700 mb-2">No Registered Sessions</h3>
+                                    <p className="text-gray-500">You have not registered for any sessions yet.</p>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                                {sessions.filter(isUserRegistered).map((session) => (
+                                    <Card key={session.id} className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleSessionClick(session)}>
+                                        <CardContent className="p-6">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <Badge className={getCategoryColor(session.category)}>
+                                                    {getCategoryLabel(session.category)}
+                                                </Badge>
+                                                {session.isPublic && (
+                                                    <Badge variant="outline" className="text-green-600 border-green-300">
+                                                        Public
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <h3 className="text-xl font-bold text-[#002248] mb-2" style={{ fontFamily: 'Literata, serif' }}>
+                                                {session.title}
+                                            </h3>
+                                            {session.description && (
+                                                <p className="text-gray-600 text-sm mb-4 line-clamp-3">
+                                                    {session.description}
+                                                </p>
+                                            )}
+                                            <div className="space-y-2 mb-4">
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <Clock className="w-4 h-4" />
+                                                    <span>{formatSessionTime(session)}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <MapPin className="w-4 h-4" />
+                                                    <span>{session.location}</span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                                    <Users className="w-4 h-4" />
+                                                    <span>
+                                                        {session._count.attendances} registered
+                                                        {session.maxCapacity && ` (+${session.maxCapacity} extra capacity)`}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div className="text-sm text-gray-500">
+                                                    by {session.mentor.firstName} {session.mentor.lastName}
+                                                </div>
+                                                <Button variant="outline" size="sm" disabled>
+                                                    <UserCheck className="w-4 h-4 mr-1" />
+                                                    Registered
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                        {/* Calendar Dialog (only in registered view) */}
+                        <Dialog open={calendarDialogOpen} onOpenChange={setCalendarDialogOpen}>
+                            <DialogContent className="max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Subscribe to Your Personal Calendar</DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-3">
+                                    <p className="text-gray-700 text-sm">Copy the link below and add it to your calendar app (Google Calendar, Apple Calendar, Outlook, etc.) as a subscription. Your calendar will stay up to date with your registered sessions.</p>
+                                    <div className="flex items-center gap-2 bg-gray-100 rounded px-2 py-1">
+                                        <input type="text" value={calendarUrl} readOnly className="flex-1 bg-transparent border-none text-xs font-mono focus:outline-none" />
+                                        <Button size="icon" variant="ghost" onClick={handleCopy} title="Copy to clipboard">
+                                            <Copy className="w-4 h-4" />
+                                        </Button>
+                                        {copied && <span className="text-green-600 text-xs ml-2">Copied!</span>}
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <Button variant="destructive" size="sm" onClick={handleRegenerateToken} disabled={regenLoading}>
+                                            {regenLoading ? 'Regenerating...' : 'Regenerate Token'}
+                                        </Button>
+                                        {regenSuccess && <span className="text-green-600 text-xs ml-2">Token regenerated!</span>}
+                                    </div>
+                                    <div className="text-xs text-red-500 mt-1">Warning: Regenerating your token will break any existing calendar subscriptions using the old link.</div>
+                                    <div className="text-xs text-gray-500 mt-2">This is a private link. Do not share it with others.</div>
+                                </div>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
+                )}
+            </div>
             {/* Session Details Modal */}
             {selectedSession && (
                 <Dialog open={!!selectedSession} onOpenChange={(open) => !open && setSelectedSession(null)}>
-                    <DialogContent className="max-w-lg">
-                        <DialogHeader>
-                            <DialogTitle>{selectedSession.title}</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-2">
-                            <div className="text-sm text-gray-600">{formatSessionTime(selectedSession)}</div>
-                            <div className="text-sm text-gray-600 flex items-center gap-2"><MapPin className="w-4 h-4" />{selectedSession.location}</div>
-                            <div className="text-sm text-gray-600 flex items-center gap-2"><Users className="w-4 h-4" />{getMentorName(selectedSession)} (Mentor)</div>
-                            {selectedSession.group && (
-                                <div className="text-sm text-gray-600 flex items-center gap-2"><Users className="w-4 h-4" />{getGroupLabel(selectedSession)}</div>
-                            )}
-                            <div className="flex gap-2 flex-wrap">
-                                <Badge className={getCategoryColor(selectedSession.category)}>{getCategoryLabel(selectedSession.category)}</Badge>
-                                {selectedSession.isPublic && <Badge variant="outline" className="text-green-600 border-green-300">Public</Badge>}
-                                {isUserRegistered(selectedSession) && <Badge variant="outline" className="text-blue-600 border-blue-300">Registered</Badge>}
+                    <DialogContent className="max-w-xl p-0 overflow-hidden rounded-2xl shadow-2xl border-0">
+                        {/* Header */}
+                        <div className="bg-gradient-to-r from-[#002248] to-[#003366] px-8 py-6">
+                            <h2 className="text-2xl md:text-3xl font-bold text-white mb-1" style={{ fontFamily: 'Literata, serif' }}>{selectedSession.title}</h2>
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                <Badge className={`${getCategoryColor(selectedSession.category)} text-xs px-2 py-0.5 font-semibold`}>{getCategoryLabel(selectedSession.category)}</Badge>
+                                {selectedSession.isPublic && <Badge variant="outline" className="text-green-100 border-green-200 bg-green-300/10">Public</Badge>}
+                                {isUserRegistered(selectedSession) && <Badge variant="outline" className="text-blue-100 border-blue-200 bg-blue-300/10">Registered</Badge>}
                             </div>
-                            {selectedSession.description && <div className="text-gray-700 text-sm mt-2 whitespace-pre-line">{selectedSession.description}</div>}
-                            <div className="text-xs text-gray-500 mt-2">Capacity: {selectedSession.maxCapacity ? `${selectedSession._count.attendances} / ${selectedSession.maxCapacity}` : `${selectedSession._count.attendances} registered`}</div>
-                            <div className="flex gap-2 mt-4">
+                        </div>
+                        {/* Main Content */}
+                        <div className="px-8 py-6 bg-white">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                        <Clock className="w-4 h-4 text-[#002248]" />
+                                        <span>{formatSessionTime(selectedSession)}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                        <MapPin className="w-4 h-4 text-[#002248]" />
+                                        <span>{selectedSession.location}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                        <Users className="w-4 h-4 text-[#002248]" />
+                                        <span>{getMentorName(selectedSession)} <span className="text-xs text-gray-500">(Mentor)</span></span>
+                                    </div>
+                                    {selectedSession.group && (
+                                        <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                            <Users className="w-4 h-4 text-[#002248]" />
+                                            <span>{getGroupLabel(selectedSession)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-2 text-gray-700 text-sm">
+                                        <span className="font-semibold">Capacity:</span>
+                                        <span>{selectedSession.maxCapacity ? `${selectedSession._count.attendances} / ${selectedSession.maxCapacity}` : `${selectedSession._count.attendances} registered`}</span>
+                                    </div>
+                                    {selectedSession.description && (
+                                        <div className="text-gray-700 text-sm mt-2 whitespace-pre-line border-l-4 border-[#002248]/10 pl-3 py-1 bg-gray-50 rounded">
+                                            {selectedSession.description}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            <hr className="my-4 border-gray-200" />
+                            <div className="flex flex-col md:flex-row gap-3 justify-end">
                                 {isUserRegistered(selectedSession) ? (
-                                    <Button variant="outline" size="sm" disabled>Registered</Button>
+                                    <Button variant="outline" size="lg" disabled className="w-full md:w-auto">Registered</Button>
                                 ) : (
-                                    <Button size="sm" className="bg-[#002248] hover:bg-[#003366]" onClick={() => joinSession(selectedSession.id)} disabled={joiningSession === selectedSession.id}>
-                                        <UserPlus className="w-4 h-4 mr-1" />
+                                    <Button size="lg" className="w-full md:w-auto bg-[#002248] hover:bg-[#003366] text-white font-semibold shadow-md transition" onClick={() => joinSession(selectedSession.id)} disabled={joiningSession === selectedSession.id}>
+                                        <UserPlus className="w-5 h-5 mr-2" />
                                         {joiningSession === selectedSession.id ? 'Joining...' : 'Join'}
                                     </Button>
                                 )}
-                                <Button variant="outline" size="sm" onClick={() => setSelectedSession(null)}>Close</Button>
+                                <Button variant="outline" size="lg" onClick={() => setSelectedSession(null)} className="w-full md:w-auto">Close</Button>
                             </div>
                         </div>
                     </DialogContent>

@@ -4,6 +4,7 @@ import { AuthUser, UCLUser, UserRole } from '@/types/auth';
 import { db } from './db';
 import { getUserPermissions } from './rbac';
 import { Role as PrismaRole } from '@prisma/client';
+import crypto from 'crypto';
 
 const JWT_SECRET = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
 
@@ -143,4 +144,19 @@ function determineUserRole(uclUser: UCLUser): UserRole {
 export function logDeniedAccess({ user, route, reason }: { user: AuthUser | null, route: string, reason: string }) {
     const userInfo = user ? `User ${user.email} (ID: ${user.id}, Role: ${user.role})` : 'Unauthenticated user';
     console.warn(`[SECURITY] Access denied on route '${route}': ${reason}. ${userInfo}`);
+}
+
+// Generate a secure random token for calendar feeds
+export function generateCalendarToken(): string {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// Ensure a user has a calendarToken, generate and save if missing
+export async function ensureCalendarToken(userId: string): Promise<string> {
+    const user = await db.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error('User not found');
+    if (user.calendarToken) return user.calendarToken;
+    const token = generateCalendarToken();
+    await db.user.update({ where: { id: userId }, data: { calendarToken: token } });
+    return token;
 }

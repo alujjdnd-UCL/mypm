@@ -36,6 +36,7 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   profilePic  String?  // URL or path to profile picture
+  calendarToken String? @unique // Unique token for calendar feed
 
   // Session management
   sessions    Session[]
