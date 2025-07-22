@@ -3,7 +3,7 @@
 import { useAuth, useRequireAuth } from '@/components/AuthProvider';
 import { PERMISSIONS } from '@/lib/rbac';
 import { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import SidebarLayout from '@/components/SidebarLayout';
 import { PageHeader } from '@/components/PageHeader';
-import { Calendar, Clock, MapPin, Users, Plus, Edit, Trash2, UserCheck, UserX, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Plus, Edit, Trash2, UserCheck, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface MentoringSession {
@@ -74,19 +74,6 @@ const getCategoryColor = (category: string) => {
             return 'bg-purple-100 text-purple-800';
         case 'CS_MATHS_MENG':
             return 'bg-green-100 text-green-800';
-        default:
-            return 'bg-gray-100 text-gray-800';
-    }
-};
-
-const getAttendanceStatusColor = (status: string) => {
-    switch (status) {
-        case 'ATTENDED':
-            return 'bg-green-100 text-green-800';
-        case 'ABSENT':
-            return 'bg-red-100 text-red-800';
-        case 'CANCELLED':
-            return 'bg-yellow-100 text-yellow-800';
         default:
             return 'bg-gray-100 text-gray-800';
     }

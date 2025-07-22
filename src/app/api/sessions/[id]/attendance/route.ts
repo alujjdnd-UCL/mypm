@@ -50,12 +50,12 @@ export async function PUT(
                         }
                     },
                     update: {
-                        status: status as any
+                        status: status as unknown as 'REGISTERED' | 'PRESENT' | 'ABSENT'
                     },
                     create: {
                         sessionId,
                         userId,
-                        status: status as any
+                        status: status as unknown as 'REGISTERED' | 'PRESENT' | 'ABSENT'
                     }
                 });
             })

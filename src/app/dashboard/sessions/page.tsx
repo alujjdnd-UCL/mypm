@@ -204,98 +204,8 @@ export default function SessionsPage() {
         )
     }));
 
-    // Filter sessions based on user's access
-    const getFilteredSessions = (allSessions: MentoringSession[]) => {
-        if (!user) return [];
-
-        return allSessions.filter(session => {
-            // Show public sessions
-            if (session.isPublic) return true;
-
-            // Show user's own group sessions
-            if (user.id === session.mentor.id) return true;
-
-            // Show sessions from user's mentor group
-            if (session.group && user.role === 'STUDENT') {
-                // This would need to be checked against user's group membership
-                return true; // For now, let the API handle this filtering
-            }
-
-            return false;
-        });
-    };
-
     const handleSessionClick = (session: MentoringSession) => {
         setSelectedSession(session);
-    };
-
-    const renderCalendar = () => {
-        const start = startOfWeek(currentWeek);
-        const end = endOfWeek(currentWeek);
-        const days = eachDayOfInterval({ start, end });
-
-        return (
-            <div className="grid grid-cols-7 gap-4">
-                {days.map(day => (
-                    <div key={day.toString()} className="flex flex-col">
-                        <div className="text-center text-sm text-gray-500 font-medium mb-2">
-                            {format(day, 'EEE')}
-                        </div>
-                        <div className="flex-1">
-                            {sessions
-                                .filter(session => isSameDay(parseISO(session.date), day))
-                                .map(session => (
-                                    <Card key={session.id} className="mb-2">
-                                        <CardContent className="p-4">
-                                            <div className="flex items-start justify-between mb-2">
-                                                <Badge className={getCategoryColor(session.category)}>
-                                                    {getCategoryLabel(session.category)}
-                                                </Badge>
-                                                {session.isPublic && (
-                                                    <Badge variant="outline" className="text-green-600 border-green-300">
-                                                        Public
-                                                    </Badge>
-                                                )}
-                                            </div>
-
-                                            <h3 className="text-md font-bold text-[#002248] mb-1" style={{ fontFamily: 'Literata, serif' }}>
-                                                {session.title}
-                                            </h3>
-
-                                            <div className="text-sm text-gray-600 mb-2">
-                                                {formatSessionTime(session)}
-                                            </div>
-
-                                            <div className="flex items-center justify-between">
-                                                <div className="text-sm text-gray-500">
-                                                    by {session.mentor.firstName} {session.mentor.lastName}
-                                                </div>
-
-                                                {isUserRegistered(session) ? (
-                                                    <Button variant="outline" size="sm" disabled>
-                                                        <UserCheck className="w-4 h-4 mr-1" />
-                                                        Registered
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => joinSession(session.id)}
-                                                        disabled={joiningSession === session.id}
-                                                        className="bg-[#002248] hover:bg-[#003366]"
-                                                    >
-                                                        <UserPlus className="w-4 h-4 mr-1" />
-                                                        {joiningSession === session.id ? 'Joining...' : 'Join'}
-                                                    </Button>
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                        </div>
-                    </div>
-                ))}
-            </div>
-        );
     };
 
     // Helper to get mentor name
@@ -362,9 +272,6 @@ export default function SessionsPage() {
             </SidebarLayout>
         );
     }
-
-    const upcomingSessions = sessions.filter(s => getSessionStatus(s) === 'upcoming');
-    const pastSessions = sessions.filter(s => getSessionStatus(s) === 'past');
 
     return (
         <SidebarLayout>

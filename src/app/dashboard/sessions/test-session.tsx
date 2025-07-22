@@ -28,12 +28,15 @@ export default function TestSession() {
         <div>
             <h1>Sessions Test</h1>
             <p>Found {sessions.length} sessions</p>
-            {sessions.map((session: any) => (
-                <div key={session.id}>
-                    <h3>{session.title}</h3>
-                    <p>{session.description}</p>
-                </div>
-            ))}
+            {sessions.map((session: unknown) => {
+                const s = session as { id: string; title: string; description: string };
+                return (
+                    <div key={s.id}>
+                        <h3>{s.title}</h3>
+                        <p>{s.description}</p>
+                    </div>
+                );
+            })}
         </div>
     );
 }

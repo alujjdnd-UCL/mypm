@@ -121,7 +121,6 @@ export default function GroupAdminPage() {
   }
 
   const mentors = allUsers;
-  const students = allUsers;
 
   const handleMentorChange = (groupId: number, mentorId: string) => {
     setGroups((groups) => groups.map((g) => (g.id === groupId ? { ...g, mentorId } : g)));

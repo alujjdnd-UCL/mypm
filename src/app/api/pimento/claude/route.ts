@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   if (sessionToken) {
     user = await verifySession(sessionToken);
   }
-  let sessions: any[] = [];
-  let registeredSessions: any[] = [];
+  let sessions: { id: string; [key: string]: unknown }[] = [];
+  let registeredSessions: { id: string; [key: string]: unknown }[] = [];
   if (user) {
     const userWithGroup = await db.user.findUnique({
       where: { id: user.id },
@@ -196,7 +196,10 @@ If the user asks a general question, just answer in markdown as above, without a
     });
     const text = msg.content.find(block => block.type === 'text')?.text || '';
     return NextResponse.json({ completion: text });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Claude API error' }, { status: 500 });
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message || 'Claude API error' }, { status: 500 });
+    }
+    return NextResponse.json({ error: 'Claude API error' }, { status: 500 });
   }
 } 

@@ -1,59 +1,74 @@
-import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3';
-import { Readable } from 'stream';
+import { S3Client, PutObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 
-const R2_ENDPOINT = process.env.R2_S3_API!;
-const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID!;
-const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY!;
-const R2_BUCKET = R2_ENDPOINT.split('/').pop()!;
-const R2_ENDPOINT_URL = R2_ENDPOINT.replace(/\/[^/]+$/, '');
-
-export const r2 = new S3Client({
-  region: 'auto',
-  endpoint: R2_ENDPOINT_URL,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID,
-    secretAccessKey: R2_SECRET_ACCESS_KEY,
-  },
-  forcePathStyle: true,
+const r2 = new S3Client({
+    region: 'auto',
+    endpoint: process.env.R2_ENDPOINT,
+    credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
 });
 
-export async function uploadProfilePic(upi: string, buffer: Buffer, contentType: string = 'image/png') {
-  const key = `profile-pics/${upi}.png`;
-  await r2.send(new PutObjectCommand({
-    Bucket: R2_BUCKET,
-    Key: key,
-    Body: buffer,
-    ContentType: contentType,
-  }));
+const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
+
+export async function uploadProfilePic(upi: string, buffer: Buffer, contentType: string) {
+    const key = `profile-pics/${upi}.png`;
+    
+    const command = new PutObjectCommand({
+        Bucket: BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+    });
+    
+    await r2.send(command);
 }
 
-export async function getProfilePic(upi: string): Promise<{ Body: Buffer, LastModified?: Date, ContentLength?: number } | null> {
-  const key = `profile-pics/${upi}.png`;
-  try {
-    const res = await r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
-    const stream = res.Body as Readable;
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(Buffer.from(chunk));
+export async function getProfilePic(upi: string) {
+    try {
+        const key = `profile-pics/${upi}.png`;
+        
+        const command = new GetObjectCommand({
+            Bucket: BUCKET_NAME,
+            Key: key,
+        });
+        
+        const response = await r2.send(command);
+        
+        if (response.Body) {
+            return {
+                Body: await response.Body.transformToByteArray(),
+                ContentType: response.ContentType,
+                ContentLength: response.ContentLength,
+                LastModified: response.LastModified,
+            };
+        }
+        
+        return null;
+    } catch (error) {
+        // File doesn't exist or other error
+        return null;
     }
-    return {
-      Body: Buffer.concat(chunks),
-      LastModified: res.LastModified,
-      ContentLength: res.ContentLength,
-    };
-  } catch (err: any) {
-    if (err.$metadata && err.$metadata.httpStatusCode === 404) return null;
-    return null;
-  }
 }
 
 export async function deleteProfilePics(upi: string) {
-  // Delete all possible extensions for this UPI
-  const exts = ['png', 'jpg', 'jpeg', 'webp'];
-  for (const ext of exts) {
-    const key = `profile-pics/${upi}.${ext}`;
-    try {
-      await r2.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
-    } catch {}
-  }
-} 
+    // List all objects with the UPI prefix
+    const listCommand = new ListObjectsV2Command({
+        Bucket: BUCKET_NAME,
+        Prefix: `profile-pics/${upi}`,
+    });
+    
+    const listResponse = await r2.send(listCommand);
+    
+    if (listResponse.Contents && listResponse.Contents.length > 0) {
+        // Delete all found objects
+        const deleteCommand = new DeleteObjectsCommand({
+            Bucket: BUCKET_NAME,
+            Delete: {
+                Objects: listResponse.Contents.map(obj => ({ Key: obj.Key! })),
+            },
+        });
+        
+        await r2.send(deleteCommand);
+    }
+}

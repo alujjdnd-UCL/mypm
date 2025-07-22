@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySession } from '@/lib/auth';
 import { db } from '@/lib/db';
-import fs from 'fs/promises';
-import path from 'path';
 import { createCanvas } from 'canvas';
 import crypto from 'crypto';
 import { getProfilePic, uploadProfilePic } from '@/lib/r2';

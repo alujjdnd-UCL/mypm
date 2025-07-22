@@ -11,9 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useSearchParams, useRouter } from 'next/navigation';
 
 // Helper to format session time range (robust to missing/invalid dates)
-function formatSessionTime(session: any) {
+function formatSessionTime(session: Record<string, unknown>) {
   try {
-    if (session.startTime && session.endTime) {
+    if (typeof session.startTime === 'string' && typeof session.endTime === 'string') {
       const start = new Date(session.startTime);
       const end = new Date(session.endTime);
       if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
@@ -23,12 +23,12 @@ function formatSessionTime(session: any) {
           return `${start.toLocaleString()} - ${end.toLocaleString()}`;
         }
       }
-    } else if (session.startTime) {
+    } else if (typeof session.startTime === 'string') {
       const start = new Date(session.startTime);
       if (!isNaN(start.getTime())) {
         return `${start.toLocaleString()}`;
       }
-    } else if (session.date) {
+    } else if (typeof session.date === 'string') {
       const date = new Date(session.date);
       if (!isNaN(date.getTime())) {
         return date.toLocaleString();
@@ -53,13 +53,12 @@ export default function PimentoPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sessionDialog, setSessionDialog] = useState<{ open: boolean, session: any | null }>({ open: false, session: null });
+  const [sessionDialog, setSessionDialog] = useState<{ open: boolean, session: Record<string, unknown> | null }>({ open: false, session: null });
   const [booking, setBooking] = useState<string | null>(null);
   const [booked, setBooked] = useState(false);
   const [streamedResponse, setStreamedResponse] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const [suggestionDetails, setSuggestionDetails] = useState<Record<string, any>>({});
-  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [suggestionDetails, setSuggestionDetails] = useState<Record<string, Record<string, unknown>>>({});
 
   // Helper to extract session suggestions from assistant message
   function parseSessionSuggestions(content: string) {
@@ -68,8 +67,8 @@ export default function PimentoPage() {
     if (jsonBlock) {
       try {
         const json = JSON.parse(jsonBlock[1].trim());
-        if (Array.isArray(json)) return json;
-        if (json.sessions && Array.isArray(json.sessions)) return json.sessions;
+        if (Array.isArray(json)) return json as Record<string, unknown>[];
+        if (json.sessions && Array.isArray(json.sessions)) return json.sessions as Record<string, unknown>[];
       } catch {}
     }
     return null;
@@ -121,14 +120,14 @@ export default function PimentoPage() {
         }
       }
       streamStep();
-    } catch (e: any) {
-      setError(e.message || 'Error contacting Claude');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error contacting Claude');
       setLoading(false);
     }
   };
 
   // Fetch session details from backend when opening modal
-  const handleSessionClick = async (session: any) => {
+  const handleSessionClick = async (session: Record<string, unknown>) => {
     try {
       const res = await fetch(`/api/sessions/${session.id}`);
       if (res.ok) {
@@ -156,10 +155,10 @@ export default function PimentoPage() {
         }, 1200);
       } else {
         const err = await res.json();
-        setSessionDialog(sd => ({ ...sd, session: { ...sd.session, bookingError: err.error || 'Failed to book session' } }));
+        setSessionDialog(sd => ({ ...sd, session: sd.session ? { ...sd.session, bookingError: err.error || 'Failed to book session' } : null }));
       }
-    } catch (e: any) {
-      setSessionDialog(sd => ({ ...sd, session: { ...sd.session, bookingError: e.message || 'Failed to book session' } }));
+    } catch (e: unknown) {
+      setSessionDialog(sd => ({ ...sd, session: sd.session ? { ...sd.session, bookingError: e instanceof Error ? e.message : 'Failed to book session' } : null }));
     } finally {
       setBooking(null);
     }
@@ -173,16 +172,15 @@ export default function PimentoPage() {
     if (suggestions && suggestions.length > 0) {
       const missingIds = suggestions.filter((s: { id: string }) => !suggestionDetails[s.id]).map((s: { id: string }) => s.id);
       if (missingIds.length > 0) {
-        setLoadingSuggestions(true);
         Promise.all(missingIds.map((id: string) =>
           fetch(`/api/sessions/${id}`).then(res => res.ok ? res.json() : null)
         )).then(results => {
-          const details: Record<string, any> = {};
+          const details: Record<string, Record<string, unknown>> = {};
           results.forEach((res, i) => {
             if (res && res.session) details[missingIds[i]] = res.session;
           });
           setSuggestionDetails(prev => ({ ...prev, ...details }));
-        }).finally(() => setLoadingSuggestions(false));
+        });
       }
     }
     // eslint-disable-next-line
@@ -308,7 +306,7 @@ export default function PimentoPage() {
           {sessionDialog.session && (
             <>
               <DialogHeader>
-                <DialogTitle>{sessionDialog.session.title}</DialogTitle>
+                <DialogTitle>{typeof sessionDialog.session?.title === 'string' ? sessionDialog.session.title : ''}</DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
                 {sessionDialog.session.date && (
@@ -332,7 +330,7 @@ export default function PimentoPage() {
                 {booked && <div className="text-green-600 text-sm font-semibold mt-2">Booked!</div>}
                 <Button
                   className="bg-[#002248] hover:bg-[#003366] mt-4"
-                  onClick={() => handleBookSession(sessionDialog.session.id)}
+                  onClick={() => handleBookSession(sessionDialog.session.id as string)}
                   disabled={booking === sessionDialog.session.id || booked}
                 >
                   {booking === sessionDialog.session.id ? 'Booking...' : 'Book this session'}

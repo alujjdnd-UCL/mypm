@@ -1,23 +1,18 @@
 'use client';
 
 import { useAuth, useRequireAuth } from '@/components/AuthProvider';
-import { UserProfile } from '@/components/UserProfile';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { PERMISSIONS } from '@/lib/rbac';
-import { Users, BookOpen, Code, Sparkles } from 'lucide-react';
 import SidebarLayout from '@/components/SidebarLayout';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { PERMISSIONS } from '@/lib/rbac';
 
 export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
-    const [announcements, setAnnouncements] = useState<any[]>([]);
+    const [announcements, setAnnouncements] = useState<unknown[]>([]);
     const [showPopup, setShowPopup] = useState(false);
-    const [popupAnnouncement, setPopupAnnouncement] = useState<any | null>(null);
+    const [popupAnnouncement, setPopupAnnouncement] = useState<unknown | null>(null);
     const [pimentoPrompt, setPimentoPrompt] = useState('');
 
     // Require authentication and user:read permission
@@ -34,10 +29,10 @@ export default function DashboardPage() {
         if (!loading && user) {
             fetch('/api/admin/announcements')
                 .then(res => res.json())
-                .then(data => {
+                .then((data) => {
                     setAnnouncements(data.announcements || []);
                     // Find the latest unseen announcement
-                    const unseen = (data.announcements || []).find((a: any) => !a.seenBy || a.seenBy.length === 0);
+                    const unseen = (data.announcements || []).find((a: unknown) => typeof a === 'object' && a !== null && Array.isArray((a as { seenBy?: unknown[] }).seenBy) && ((a as { seenBy?: unknown[] }).seenBy?.length === 0));
                     if (unseen) {
                         setPopupAnnouncement(unseen);
                         setShowPopup(true);
@@ -52,7 +47,7 @@ export default function DashboardPage() {
             await fetch('/api/admin/announcements/seen', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ announcementId: popupAnnouncement.id }),
+                body: JSON.stringify({ announcementId: (popupAnnouncement && typeof popupAnnouncement === 'object' && 'id' in popupAnnouncement) ? (popupAnnouncement as { id: string }).id : undefined }),
             });
         }
     };
@@ -123,7 +118,7 @@ export default function DashboardPage() {
                         <div className="bg-white rounded-2xl shadow p-8 border border-[#e3eafc] flex flex-col md:flex-row md:items-center md:gap-8">
                             <div className="flex items-center gap-4 mb-6 md:mb-0 md:w-1/3">
                                 <div className="bg-gradient-to-br from-[#ffb347] to-[#ffcc80] rounded-full p-3 shadow">
-                                    <Sparkles className="w-10 h-10 text-[#ff6f1b]" />
+                                    <span className="w-10 h-10 text-[#ff6f1b]">🚀</span>
                                 </div>
                                 <div>
                                     <h3 className="text-2xl md:text-2xl font-bold text-[#002248] mb-1" style={{ fontFamily: 'Literata, serif' }}>Ask Pimento</h3>
@@ -153,11 +148,11 @@ export default function DashboardPage() {
                 <Dialog open={showPopup} onOpenChange={setShowPopup}>
                     <DialogContent className="max-w-md">
                         <DialogHeader>
-                            <DialogTitle>{popupAnnouncement?.title}</DialogTitle>
+                            <DialogTitle>{(popupAnnouncement && typeof popupAnnouncement === 'object' && popupAnnouncement !== null && 'title' in popupAnnouncement) ? (popupAnnouncement as { title?: string }).title : ''}</DialogTitle>
                         </DialogHeader>
-                        <div className="text-[#002248] whitespace-pre-line mb-2">{popupAnnouncement?.content}</div>
-                        <div className="text-xs text-gray-500 mb-2">By {popupAnnouncement?.createdBy?.firstName} {popupAnnouncement?.createdBy?.lastName} ({popupAnnouncement?.createdBy?.role}) • {popupAnnouncement && new Date(popupAnnouncement.createdAt).toLocaleString()}</div>
-                        <Button className="w-full bg-[#002248] hover:bg-[#003366] mt-2" onClick={handleClosePopup}>Dismiss</Button>
+                        <div className="text-[#002248] whitespace-pre-line mb-2">{(popupAnnouncement && typeof popupAnnouncement === 'object' && popupAnnouncement !== null && 'content' in popupAnnouncement) ? (popupAnnouncement as { content?: string }).content : ''}</div>
+                        <div className="text-xs text-gray-500 mb-2">By {(popupAnnouncement && typeof popupAnnouncement === 'object' && popupAnnouncement !== null && 'createdBy' in popupAnnouncement && (popupAnnouncement as { createdBy?: { firstName?: string; lastName?: string; role?: string } }).createdBy) ? `${(popupAnnouncement as { createdBy?: { firstName?: string; lastName?: string; role?: string } }).createdBy?.firstName} ${(popupAnnouncement as { createdBy?: { firstName?: string; lastName?: string; role?: string } }).createdBy?.lastName} (${(popupAnnouncement as { createdBy?: { firstName?: string; lastName?: string; role?: string } }).createdBy?.role}) ${(popupAnnouncement as { createdAt?: string }).createdAt ? new Date((popupAnnouncement as { createdAt?: string }).createdAt!).toLocaleString() : ''}` : ''}</div>
+                        <button className="w-full bg-[#002248] hover:bg-[#003366] mt-2 text-white font-semibold px-4 py-2 rounded-lg shadow transition text-sm" onClick={handleClosePopup}>Dismiss</button>
                     </DialogContent>
                 </Dialog>
             </main>

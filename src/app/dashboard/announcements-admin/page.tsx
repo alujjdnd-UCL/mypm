@@ -14,7 +14,7 @@ const ADMIN_ROLES = ["SENIOR_MENTOR", "ADMIN", "SUPERADMIN"];
 
 export default function AnnouncementsAdminPage() {
   const { user, loading: userLoading } = useAuth();
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const [announcements, setAnnouncements] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", content: "", id: null as string | null });
@@ -58,8 +58,9 @@ export default function AnnouncementsAdminPage() {
     );
   }
 
-  const handleEdit = (a: any) => {
-    setForm({ title: a.title, content: a.content, id: a.id });
+  const handleEdit = (a: unknown) => {
+    const announcement = a as { title: string; content: string; id: string };
+    setForm({ title: announcement.title, content: announcement.content, id: announcement.id });
     setShowForm(true);
   };
 
