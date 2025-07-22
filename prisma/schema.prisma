@@ -15,6 +15,7 @@ model Group {
   mentorId  String?  @unique
   mentees   User[]   @relation("MenteeGroup")
   info      String?  // Optional: group resources/info
+  groupChatLink String?  // Optional: group chat link (Discord, WhatsApp, etc.)
 
   // Session relations
   mentoringSessions MentoringSession[]

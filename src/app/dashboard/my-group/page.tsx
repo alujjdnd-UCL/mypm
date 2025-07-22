@@ -3,11 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Users, Info, Mail, Link as LinkIcon, Eye } from "lucide-react";
+import { Users, Info, Mail, Link as LinkIcon, Eye, Edit, FileText } from "lucide-react";
 import SidebarLayout from "@/components/SidebarLayout";
 import { PageHeader } from "@/components/PageHeader";
 import Link from "next/link";
 import { useAuth } from "@/components/AuthProvider";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function MyGroupPage() {
   const { user, loading: userLoading } = useAuth();
@@ -15,7 +17,7 @@ export default function MyGroupPage() {
     id: string;
     groupNumber: number;
     info: string;
-    socials: string;
+    groupChatLink: string;
     mentor: {
       id: string;
       upi: string;
@@ -35,7 +37,7 @@ export default function MyGroupPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [infoEdit, setInfoEdit] = useState<string>("");
-  const [socialsEdit, setSocialsEdit] = useState<string>("");
+  const [groupChatLinkEdit, setGroupChatLinkEdit] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
@@ -48,7 +50,7 @@ export default function MyGroupPage() {
         .then((data) => {
           setGroup(data.group);
           setInfoEdit(data.group?.info || "");
-          setSocialsEdit(data.group?.socials || "");
+          setGroupChatLinkEdit(data.group?.groupChatLink || "");
           setError(null);
         })
         .catch(() => setError("Failed to load group info."))
@@ -67,13 +69,13 @@ export default function MyGroupPage() {
     const res = await fetch("/api/user/group", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ info: infoEdit, socials: socialsEdit }),
+      body: JSON.stringify({ info: infoEdit, socials: groupChatLinkEdit }),
     });
     setSaving(false);
     if (res.ok) {
       setSuccess(true);
       setGroup((g) =>
-        g ? { ...g, info: infoEdit, socials: socialsEdit } : null,
+        g ? { ...g, info: infoEdit, groupChatLink: groupChatLinkEdit } : null,
       );
       setTimeout(() => setSuccess(false), 2000);
     }
@@ -259,88 +261,127 @@ export default function MyGroupPage() {
                   </div>
                 </div>
 
-                {/* Group Information */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
-                    <Info className="w-5 h-5" />
-                    Group Information
-                  </h3>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    {/* CORRECTED: Added !isPreviewing check back */}
-                    {canEdit && !isPreviewing ? (
-                      <div>
+                {canEdit && !isPreviewing ? (
+                  <div className="space-y-6">
+                    {/* Group Chat Link */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5" />
+                        Group Chat Link
+                      </h3>
+                      <input
+                        type="url"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                        value={groupChatLinkEdit}
+                        onChange={(e) => setGroupChatLinkEdit(e.target.value)}
+                        placeholder="https://discord.gg/... or https://chat.whatsapp.com/..."
+                      />
+                    </div>
+
+                    {/* Group Information */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
+                        <Info className="w-5 h-5" />
+                        Group Information
+                      </h3>
+                      <div className="space-y-2">
                         <textarea
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 text-sm"
-                          rows={3}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                          rows={6}
                           value={infoEdit}
                           onChange={(e) => setInfoEdit(e.target.value)}
-                          placeholder="Add group information, meeting times, etc..."
+                          placeholder="Add group information using Markdown...\n\n**Bold text**, *italic text*\n- List item 1\n- List item 2\n\n[Link](https://example.com)"
                         />
-                        <Button
-                          className="bg-[#002248] hover:bg-[#003366]"
-                          onClick={handleSaveInfo}
-                          disabled={saving}
-                        >
-                          {saving ? "Saving..." : "Save"}
-                        </Button>
-                        {success && (
-                          <span className="ml-3 text-green-600 text-sm font-medium">
-                            Saved!
-                          </span>
-                        )}
+                        <div className="text-xs text-gray-500 flex items-center gap-1">
+                          <FileText className="w-3 h-3" />
+                          Supports Markdown: **bold**, *italic*, [links](url), lists, etc.
+                        </div>
                       </div>
-                    ) : group.info ? (
-                      <p className="text-gray-700 leading-relaxed">
-                        {group.info}
-                      </p>
-                    ) : (
-                      <p className="text-gray-500 italic">
-                        No additional information provided
-                      </p>
-                    )}
-                  </div>
-                </div>
+                    </div>
 
-                {/* Socials Section */}
-                <div>
-                  <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
-                    <LinkIcon className="w-5 h-5" />
-                    Socials
-                  </h3>
-                  <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    {canEdit && !isPreviewing ? (
-                      <div>
-                        <textarea
-                          className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2 text-sm"
-                          rows={3}
-                          value={socialsEdit}
-                          onChange={(e) => setSocialsEdit(e.target.value)}
-                          placeholder="Add social media links, etc..."
-                        />
-                        <Button
-                          className="bg-[#002248] hover:bg-[#003366]"
-                          onClick={handleSaveInfo}
-                          disabled={saving}
-                        >
-                          {saving ? "Saving..." : "Save"}
-                        </Button>
-                        {success && (
-                          <span className="ml-3 text-green-600 text-sm font-medium">
-                            Saved!
-                          </span>
+                    {/* Single Save Button */}
+                    <div className="flex items-center gap-3">
+                      <Button
+                        className="bg-[#002248] hover:bg-[#003366]"
+                        onClick={handleSaveInfo}
+                        disabled={saving}
+                      >
+                        {saving ? "Saving..." : "Save Changes"}
+                      </Button>
+                      {success && (
+                        <span className="text-green-600 text-sm font-medium">
+                          Saved!
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Group Chat Link */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5" />
+                        Group Chat Link
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        {groupChatLinkEdit ? (
+                          <a
+                            href={groupChatLinkEdit}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-[#002248] hover:text-[#003366] underline font-medium"
+                          >
+                            {groupChatLinkEdit}
+                          </a>
+                        ) : (
+                          <p className="text-gray-500 italic">
+                            No group chat link provided
+                          </p>
                         )}
                       </div>
-                    ) : group.socials ? (
-                      <p className="text-gray-700 leading-relaxed">
-                        {group.socials}
-                      </p>
-                    ) : (
-                      <p className="text-gray-500 italic">
-                        No social media links provided
-                      </p>
-                    )}
+                    </div>
+
+                    {/* Group Information */}
+                    <div>
+                      <h3 className="text-lg font-semibold mb-3 text-[#002248] flex items-center gap-2">
+                        <Info className="w-5 h-5" />
+                        Group Information
+                      </h3>
+                      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        {infoEdit ? (
+                          <div className="prose prose-sm max-w-none text-gray-700">
+                            <ReactMarkdown 
+                              remarkPlugins={[remarkGfm]}
+                              components={{
+                                h1: ({node, ...props}) => <h1 className="text-lg font-bold mb-2 text-[#002248]" {...props} />,
+                                h2: ({node, ...props}) => <h2 className="text-base font-semibold mb-1 text-[#002248]" {...props} />,
+                                h3: ({node, ...props}) => <h3 className="text-sm font-semibold mb-1 text-[#002248]" {...props} />,
+                                p: ({node, ...props}) => <p className="mb-2 leading-relaxed" {...props} />,
+                                ul: ({node, ...props}) => <ul className="list-disc pl-4 mb-2" {...props} />,
+                                ol: ({node, ...props}) => <ol className="list-decimal pl-4 mb-2" {...props} />,
+                                li: ({node, ...props}) => <li className="mb-1" {...props} />,
+                                blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-[#002248]/20 pl-4 italic bg-blue-50 py-2 rounded-r" {...props} />,
+                                code: ({node, inline, ...props}) => 
+                                  inline 
+                                    ? <code className="bg-gray-200 px-1 rounded text-sm" {...props} />
+                                    : <code className="block bg-gray-800 text-white p-3 rounded font-mono text-sm overflow-x-auto" {...props} />,
+                                a: ({node, ...props}) => <a className="text-[#002248] hover:text-[#003366] underline" {...props} target="_blank" rel="noopener noreferrer" />,
+                                strong: ({node, ...props}) => <strong className="font-semibold text-[#002248]" {...props} />,
+                                em: ({node, ...props}) => <em className="italic" {...props} />
+                              }}
+                            >
+                              {infoEdit}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <p className="text-gray-500 italic">
+                            No additional information provided
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
